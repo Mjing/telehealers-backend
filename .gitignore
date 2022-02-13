@@ -1,0 +1,8 @@
+*.out
+*.obj
+models
+restapi/operations
+restapi/doc.go
+restapi/server.go
+restapi/embedded_spec.go
+cmd

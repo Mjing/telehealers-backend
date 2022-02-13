@@ -1,0 +1,41 @@
+consumes:
+- application/io.goswagger.examples.todo-list.v1+json
+info:
+  description: TH Server. Handles asssets, routing, data.
+  title: Telehealers backend
+  version: 0.0.0
+paths: {}
+produces:
+- application/io.goswagger.examples.todo-list.v1+json
+schemes:
+- http
+swagger: "2.0"
+paths:
+  /profile_pictures/{name}:
+    get:
+      description: Central endpoint for profile pictures
+      produces:
+        - image/png
+      parameters:
+        - name: name
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Fetched image
+          schema:
+            type: file
+        default:
+          description: Error response
+          schema:
+            $ref: '#/definitions/error'
+
+definitions:
+  error:
+    type: object
+    required:
+      - message
+    properties:
+      message:
+        type: string
