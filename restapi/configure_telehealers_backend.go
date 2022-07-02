@@ -7,9 +7,11 @@ import (
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
-
+	"github.com/rs/cors"
 	"telehealers.in/router/restapi/operations"
+	"telehealers.in/router/restapi/operations/conferrencing"
 	customHandlers "telehealers.in/router/src/swagger_service_handler"
+	vcCustomHandlers "telehealers.in/router/src/swagger_service_handler/conferrencing"
 )
 
 //go:generate swagger generate server --target ../../telehealers --name TelehealersBackend --spec ../swagger/swagger.yml --principal interface{}
@@ -40,6 +42,8 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 	fmt.Println("Installing profile_picture endpoint.")
 	api.GetProfilePicturesNameHandler = operations.GetProfilePicturesNameHandlerFunc(
 		customHandlers.GetProfilePictures)
+	api.ConferrencingGetRoomAccessTokenHandler = conferrencing.GetRoomAccessTokenHandlerFunc(
+		vcCustomHandlers.GetAccessToken)
 
 	api.PreServerShutdown = func() {}
 
@@ -63,7 +67,8 @@ func configureServer(s *http.Server, scheme, addr string) {
 // The middleware configuration is for the handler executors. These do not apply to the swagger.json document.
 // The middleware executes after routing but before authentication, binding and validation.
 func setupMiddlewares(handler http.Handler) http.Handler {
-	return handler
+	handleCORS := cors.Default().Handler
+	return handleCORS(handler)
 }
 
 // The middleware configuration happens before anything, this middleware also applies to serving the swagger.json document.

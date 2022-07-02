@@ -1,12 +1,12 @@
 consumes:
-- application/io.goswagger.examples.todo-list.v1+json
+- application/json
 info:
   description: TH Server. Handles asssets, routing, data.
   title: Telehealers backend
   version: 0.0.0
 paths: {}
 produces:
-- application/io.goswagger.examples.todo-list.v1+json
+- application/json
 schemes:
 - http
 swagger: "2.0"
@@ -30,8 +30,109 @@ paths:
           description: Error response
           schema:
             $ref: '#/definitions/error'
+  /doctor/{doctor_id}:
+    get:
+      description: Fetch data for single doctor
+      parameters:
+        - name: doctor_id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: Doctor info
+          schema:
+            $ref: '#/definitions/doctorInfo'
+        default:
+          description: Error response
+          schema:
+            $ref: '#/definitions/error'
+  /available_doctors:
+    get:
+      description: Get available doctors
+      parameters:
+        - name: doctor_id
+          in: query
+          type: string
+        - name: time
+          in: query
+          type: integer
+      responses:
+        200:
+          description: List of available docs
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/doctorInfo'
+        default:
+          description: Error response
+          schema:
+            $ref: '#/definitions/error'
+      
+  /book_appointment:
+    post:
+      description: Book appointment
+      parameters:
+        - name: doctor_id
+          in: query
+          type: string
+          required: true
+        - name: patient_id
+          in: query
+          type: string
+          required: true
+        - name: booking_time
+          in: query
+          type: integer
+          required: true
+      responses:
+        200:
+          description: Success
+        default:
+          description: Fails
+          schema:
+            $ref:  '#/definitions/error'
+  /room_access_token:
+    get:
+      description: Returns a room access token. An access token is required by the room to perform any action.
+      tags:
+        - conferrencing
+      parameters:
+        - name: room 
+          description: Room name for the conferrence. 
+          in: query
+          required: true
+          type: string
+        - name: id 
+          description: Participant ID/name.
+          in: query
+          required: true
+          type: string
+      responses:
+        200:
+          description: Access token for the room x client.
+          schema:
+            type: string
+        default:
+          description: Failure
+          schema:
+            $ref: '#/definitions/error'
+        
 
 definitions:
+  doctorInfo:
+    type: object
+    required:
+      - id
+      - display_name
+      - picture_id
+    properties:
+      id:
+        type: string
+      display_name:
+        type: string
+      picture_id:
+        type: string
   error:
     type: object
     required:

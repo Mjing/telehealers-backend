@@ -1,4 +1,4 @@
-server.out: src/*/*.go swagger.obj
+server.out: src/*/*.go src/*/*/*.go swagger.obj restapi/configure_telehealers_backend.go
 	go build -o $@ cmd/telehealers-backend-server/main.go
 
 swagger.obj: swagger/swagger.yml
@@ -6,4 +6,4 @@ swagger.obj: swagger/swagger.yml
 	echo "" > $@
 
 clean:
-	rm *.out *.obj
+	rm -rf *.out *.obj restapi/operations
