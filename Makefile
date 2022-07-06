@@ -2,7 +2,7 @@ server.out: src/*/*.go src/*/*/*.go swagger.obj restapi/configure_telehealers_ba
 	go build -o $@ cmd/telehealers-backend-server/main.go
 
 swagger.obj: swagger/swagger.yml
-	swagger generate server -A telehealers-backend -f ./swagger/swagger.yml
+	swagger generate server -A telehealers-backend -P models.Principal -f ./swagger/swagger.yml
 	echo "" > $@
 
 clean:

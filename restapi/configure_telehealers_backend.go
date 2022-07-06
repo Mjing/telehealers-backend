@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-openapi/errors"
+	"telehealers.in/router/models"
 	"github.com/go-openapi/runtime"
 	"github.com/rs/cors"
 	"telehealers.in/router/restapi/operations"
@@ -48,6 +49,15 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 	api.PreServerShutdown = func() {}
 
 	api.ServerShutdown = func() {}
+
+	api.KeyAuth = func(token string) (*models.Principal, error) {
+        if token == "letmein" {
+            prin := models.Principal(token)
+            return &prin, nil
+        }
+        api.Logger("Access attempt with incorrect api key auth: %s", token)
+        return nil, errors.New(401, "incorrect api key auth")
+    }
 
 	return setupGlobalMiddleware(api.Serve(setupMiddlewares))
 }

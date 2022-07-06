@@ -10,6 +10,15 @@ produces:
 schemes:
 - http
 swagger: "2.0"
+securityDefinitions:
+  key:
+    type: apiKey
+    in: header
+    name: telehealers-token
+
+security:
+  - key: []
+
 paths:
   /profile_pictures/{name}:
     get:
@@ -140,3 +149,5 @@ definitions:
     properties:
       message:
         type: string
+  prinicipal:
+    type: string

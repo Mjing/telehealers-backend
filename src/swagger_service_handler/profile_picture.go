@@ -13,7 +13,7 @@ var (
 	ImageNotFound = "Image not found"
 )
 
-func GetProfilePictures(params opn.GetProfilePicturesNameParams) middleware.Responder {
+func GetProfilePictures(params opn.GetProfilePicturesNameParams, p *models.Principal) middleware.Responder {
 	pngFile, fileReadErr := os.Open("example.png")
 	if fileReadErr != nil {
 		fmt.Errorf("Error:%v", fileReadErr)

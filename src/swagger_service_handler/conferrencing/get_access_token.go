@@ -23,7 +23,7 @@ var (
 	API_SECRET           = os.Getenv("LIVEKIT_API_SECRET")
 )
 
-func GetAccessToken(params opn.GetRoomAccessTokenParams) middleware.Responder {
+func GetAccessToken(params opn.GetRoomAccessTokenParams, p *models.Principal) middleware.Responder {
 	token, err := getJoinToken(API_KEY, API_SECRET, params.Room, params.ID)
 	if err != nil {
 		fmt.Errorf("[CONFERRENCE]Unable to create access token:%v", err)
