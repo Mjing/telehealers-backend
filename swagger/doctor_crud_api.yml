@@ -1,0 +1,106 @@
+doctor:
+  register:
+    put:
+      tags:
+        - doctor
+        - register
+      parameters:
+        - name: info
+          in: body
+          schema:
+            required:
+              - name
+              - email
+              - phone
+              - registration_id
+            $ref: '#/doctor_definitions/doctor_info'
+      responses:
+        200:
+          description: Succcess   
+        default:
+          description: Error Response
+          schema:
+            $ref: './definitions.yml#/error'
+  update:
+    post:
+      tags:
+        - doctor
+        - update
+      parameters:
+        - name: info
+          in: body
+          schema:
+            required:
+              - id
+            $ref: '#/doctor_definitions/doctor_info'
+      responses:
+        200:
+          description: Update successful
+        default:
+          description: Error
+          schema:
+            $ref: './definitions.yml#/error'
+  find:
+    get:
+      tags:
+        - doctor
+        - read
+      parameters:
+        - name: id
+          in: query
+          type: integer
+          description: System id number
+        - name: namecontaining
+          in: query
+          type: string
+          description: find doctors with name containing this string
+      responses:
+        200:
+          description: List of approved doctors
+          type: array
+          items:
+            schema:
+              $ref: '#/doctor_definitions/doctor_info'
+
+        default:
+          description: Error response
+          schema:
+            $ref: './definitions.yml#/error'
+  remove:
+    delete:
+      tags:
+        - doctor
+        - delete
+      parameter:
+        - name: info
+          in: body
+          schema:
+            required:
+              - id
+            $ref: '#/definitions/doctor_info'
+      responses:
+        200:
+        default:
+          description: Error response
+          $ref: './definitions.yml#/error'
+
+doctor_definitions:
+  doctor_info:
+    type: object
+    properties:
+      id:
+        description: internal system id as returned by other services.
+        type: integer
+      name:
+        type: string
+      email:
+        type: string
+      phone:
+        type: string
+      about:
+        type: string
+      profile_picture:
+        type: integer
+      registration_id:
+        description: 'Certification id, for practice license'
+        type: string

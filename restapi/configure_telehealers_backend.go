@@ -6,19 +6,34 @@ import (
 	"net/http"
 
 	"github.com/go-openapi/errors"
-	"telehealers.in/router/models"
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/runtime/middleware"
+	"github.com/go-openapi/swag"
 	"github.com/rs/cors"
+	"telehealers.in/router/models"
 	"telehealers.in/router/restapi/operations"
 	"telehealers.in/router/restapi/operations/conferrencing"
+	"telehealers.in/router/restapi/operations/doctor"
 	customHandlers "telehealers.in/router/src/swagger_service_handler"
 	vcCustomHandlers "telehealers.in/router/src/swagger_service_handler/conferrencing"
+	dbApis "telehealers.in/router/src/swagger_service_handler/db_apis"
 )
 
 //go:generate swagger generate server --target ../../telehealers --name TelehealersBackend --spec ../swagger/swagger.yml --principal interface{}
 
+type customServerOptions struct {
+	Log    string `short:"l" long:"log" description:"Log file"`
+	DBName string `long:"dbname" description:"data-base name" default:"telehealers"`
+	DBUser string `long:"dbuser" description:"db username for login" default:"root"`
+	DBPass string `long:"dbpass" description:"db password for login" default:""`
+	DBAddr string `long:"dbaddr" description:"db address in for ip:port" default:"127.0.0.1:3306"`
+}
+
+var currentOpts = new(customServerOptions)
+
 func configureFlags(api *operations.TelehealersBackendAPI) {
-	// api.CommandLineOptionsGroups = []swag.CommandLineOptionsGroup{ ... }
+	api.CommandLineOptionsGroups = []swag.CommandLineOptionsGroup{
+		{ShortDescription: "Server configuration flags", Options: currentOpts}}
 }
 
 func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
@@ -29,7 +44,10 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 	// Expected interface func(string, ...interface{})
 	//
 	// Example:
-	// api.Logger = log.Printf
+	swaggerLogger := *dbApis.SetupLogFile(currentOpts.Log)
+	swaggerLogger.SetPrefix("|GENCODE|")
+	api.Logger = swaggerLogger.Printf
+	dbApis.InitConnection(currentOpts.DBName, currentOpts.DBUser, currentOpts.DBPass, currentOpts.DBAddr)
 
 	api.UseSwaggerUI()
 	// To continue using redoc as your UI, uncomment the following line
@@ -45,19 +63,23 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 		customHandlers.GetProfilePictures)
 	api.ConferrencingGetRoomAccessTokenHandler = conferrencing.GetRoomAccessTokenHandlerFunc(
 		vcCustomHandlers.GetAccessToken)
+	api.DoctorPutDoctorRegisterHandler = doctor.PutDoctorRegisterHandlerFunc(
+		func(pdrp doctor.PutDoctorRegisterParams, p *models.Principal) middleware.Responder {
+			return dbApis.RegisterDoctor(pdrp)
+		})
 
 	api.PreServerShutdown = func() {}
 
 	api.ServerShutdown = func() {}
 
 	api.KeyAuth = func(token string) (*models.Principal, error) {
-        if token == "letmein" {
-            prin := models.Principal(token)
-            return &prin, nil
-        }
-        api.Logger("Access attempt with incorrect api key auth: %s", token)
-        return nil, errors.New(401, "incorrect api key auth")
-    }
+		if token == "letmein" {
+			prin := models.Principal(token)
+			return &prin, nil
+		}
+		api.Logger("Access attempt with incorrect api key auth: %s", token)
+		return nil, errors.New(401, "incorrect api key auth")
+	}
 
 	return setupGlobalMiddleware(api.Serve(setupMiddlewares))
 }

@@ -28,7 +28,7 @@ func GetAccessToken(params opn.GetRoomAccessTokenParams, p *models.Principal) mi
 	if err != nil {
 		fmt.Errorf("[CONFERRENCE]Unable to create access token:%v", err)
 		return opn.NewGetRoomAccessTokenDefault(400).WithPayload(
-			&models.Error{Message: &LIVE_KIT_NOT_WORKING})
+			models.Error(LIVE_KIT_NOT_WORKING))
 	} else {
 		return opn.NewGetRoomAccessTokenOK().WithPayload(token)
 	}

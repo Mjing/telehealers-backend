@@ -38,46 +38,15 @@ paths:
         default:
           description: Error response
           schema:
-            $ref: '#/definitions/error'
-  /doctor/{doctor_id}:
-    get:
-      description: Fetch data for single doctor
-      parameters:
-        - name: doctor_id
-          in: path
-          type: string
-          required: true
-      responses:
-        200:
-          description: Doctor info
-          schema:
-            $ref: '#/definitions/doctorInfo'
-        default:
-          description: Error response
-          schema:
-            $ref: '#/definitions/error'
-  /available_doctors:
-    get:
-      description: Get available doctors
-      parameters:
-        - name: doctor_id
-          in: query
-          type: string
-        - name: time
-          in: query
-          type: integer
-      responses:
-        200:
-          description: List of available docs
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/doctorInfo'
-        default:
-          description: Error response
-          schema:
-            $ref: '#/definitions/error'
-      
+            $ref: './definitions.yml#/error'
+  /doctor/register:
+    $ref: './doctor_crud_api.yml#/doctor/register'
+  /doctor/update:
+    $ref: './doctor_crud_api.yml#/doctor/update'
+  /doctor/remove:
+    $ref: './doctor_crud_api.yml#/doctor/remove'
+  /doctor/find:
+    $ref: './doctor_crud_api.yml#/doctor/find'
   /book_appointment:
     post:
       description: Book appointment
@@ -100,7 +69,7 @@ paths:
         default:
           description: Fails
           schema:
-            $ref:  '#/definitions/error'
+            $ref:  './definitions.yml#/error'
   /room_access_token:
     get:
       description: Returns a room access token. An access token is required by the room to perform any action.
@@ -125,29 +94,7 @@ paths:
         default:
           description: Failure
           schema:
-            $ref: '#/definitions/error'
-        
-
+            $ref: './definitions.yml#/error'
 definitions:
-  doctorInfo:
-    type: object
-    required:
-      - id
-      - display_name
-      - picture_id
-    properties:
-      id:
-        type: string
-      display_name:
-        type: string
-      picture_id:
-        type: string
-  error:
-    type: object
-    required:
-      - message
-    properties:
-      message:
-        type: string
-  prinicipal:
+  principal:
     type: string

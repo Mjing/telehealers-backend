@@ -18,7 +18,7 @@ func GetProfilePictures(params opn.GetProfilePicturesNameParams, p *models.Princ
 	if fileReadErr != nil {
 		fmt.Errorf("Error:%v", fileReadErr)
 		return opn.NewGetProfilePicturesNameDefault(400).WithPayload(
-			&models.Error{Message: &ImageNotFound})
+			models.Error(ImageNotFound))
 	}
 	return opn.NewGetProfilePicturesNameOK().WithPayload(pngFile)
 }

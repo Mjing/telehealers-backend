@@ -1,6 +1,6 @@
 module telehealers.in/router
 
-go 1.17
+go 1.18
 
 require (
 	github.com/arangodb/go-driver v1.3.2
@@ -39,6 +39,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
 	github.com/go-redis/redis/v8 v8.11.3 // indirect
+	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/go-swagger/go-swagger v0.29.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

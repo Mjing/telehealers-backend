@@ -1,0 +1,88 @@
+package apis
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+
+	_ "github.com/go-sql-driver/mysql"
+)
+
+/** To be called at the start of the application,
+for setup and initialization of the package**/
+func InitConnection(dbName, dbUser, dbPassword, dbAddress string) (err error) {
+	if pool == nil {
+		pool, err = sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v)/%v",
+			dbUser, dbPassword, dbAddress, dbName))
+		if err != nil {
+			logger.Fatalf("[%v]Unable to use source name:%v", logIDFlag, err)
+			return err
+		}
+	}
+	ctx, cancel := getTimeOutContext()
+	defer cancel()
+	err = pool.PingContext(ctx)
+	if err != nil {
+		logger.Fatalf("[%v]Unable to connect to database: %v", logIDFlag, err)
+	}
+	logger.Printf("[%v]DB Connected", logIDFlag)
+	return
+}
+
+/** Execute Insert queries.
+returns lastId inserted, rows affected, error
+Data update here implies: Creation, Updation and Deletion
+**/
+func ExecDataUpdateQuery(query string, queryParams ...any) (int64, int64, error) {
+	ctx, cancel := getTimeOutContext()
+	defer cancel()
+	result, err := pool.ExecContext(ctx, query, queryParams...)
+	if err != nil {
+		logger.Printf("[Error]In data Updater:%v", err)
+		return 0, 0, err
+	} else {
+		lastId, _ := result.LastInsertId()
+		rowsAffected, _ := result.RowsAffected()
+		logger.Printf("[Success]data updated:%v:%v", lastId, rowsAffected)
+		return lastId, rowsAffected, nil
+	}
+}
+
+func ExecDataFetchQuery(ctx context.Context, query string, queryParams ...any) (*sql.Rows, error) {
+	rows, err := pool.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		logger.Printf("[Error]In data fetch:%v", err)
+		return nil, err
+	} else {
+		return rows, nil
+	}
+}
+
+/*** SQL HELPER FUNCTION ***/
+/*** Append base string with 'columnName = ?' with joinString as conjunction.
+Provided to create SQL operation lists of form
+	"col1 = ?, col2 = ?,..." or "col1 = ? AND col2 = ? AND..."
+Some simple usage
+("", "col", ",") == "col = ?"
+("col1 = ?", "col2", ",") == "col1 = ? , col2 = ?"
+("col1 > 2", "col2", "AND") == "col1 > 2 AND col2 = ?"
+***/
+func updateQueryListString(base *string, columnName, joinString string) {
+	if *base != "" {
+		*base += " " + joinString + " "
+	}
+	*base += columnName + " = ?"
+}
+
+/*** Append base string with operation with joinString as conjunction.
+Some simple usage
+("", "col", ",") == "col"
+("col1 = ?", "col2 = ?", ",") == "col1 = ?, col2 = ?"
+("col1 > 2", "col1 < 20", "AND") == "col1 > 2 AND col1 < 20"
+***/
+func updateQueryListStringWithOperation(base *string, operation, joinString string) {
+	if (*base != "") && (operation != "") {
+		*base += " " + joinString + " "
+	}
+	*base += operation
+}
