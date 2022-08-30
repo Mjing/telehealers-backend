@@ -8,7 +8,8 @@ swagger.obj: swagger/*.yml
 
 #NOTE: Load env before running test
 run_tests:
+	go clean -testcache
 	go test telehealers.in/router/src/swagger_service_handler/db_apis
 clean:
-	rm -rf *.out *.obj restapi/operations
+	rm -rf *.out *.obj restapi/operations flattened_swagger.yml
 	rm -rf models restapi/doc.go restapi/embedded_spec.go restapi/server.go

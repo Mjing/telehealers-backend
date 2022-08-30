@@ -14,6 +14,10 @@ import (
 )
 
 var (
+	dbName = os.Getenv("DB_NAME")
+	dbUser = os.Getenv("DB_USER")
+	dbPass = os.Getenv("DB_PASS")
+	dbAddr = os.Getenv("DB_ADDR")
 	//DB network variables
 	pool                 *sql.DB
 	queryTimeOutDuration = time.Second * 5

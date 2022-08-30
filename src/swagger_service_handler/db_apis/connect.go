@@ -8,12 +8,26 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+/**
+Function to setup DB connection variables at start
+dbNameV: Name of SQL database
+dbUserV: SQL username
+dbPassV: Password for SQL username
+dbAddrV: Server address in host:ip format e.g. localhost:3306
+**/
+func SetConnectionVars(dbNameV, dbUserV, dbPassV, dbAddrV string) {
+	dbName = dbNameV
+	dbUser = dbUserV
+	dbPass = dbPassV
+	dbAddr = dbAddrV
+}
+
 /** To be called at the start of the application,
 for setup and initialization of the package**/
-func InitConnection(dbName, dbUser, dbPassword, dbAddress string) (err error) {
+func InitConnection() (err error) {
 	if pool == nil {
 		pool, err = sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v)/%v",
-			dbUser, dbPassword, dbAddress, dbName))
+			dbUser, dbPass, dbAddr, dbName))
 		if err != nil {
 			logger.Fatalf("[%v]Unable to use source name:%v", logIDFlag, err)
 			return err

@@ -50,18 +50,30 @@ doctor:
           in: query
           type: integer
           description: System id number
-        - name: namecontaining
+        - name: name_containing
           in: query
           type: string
           description: find doctors with name containing this string
+        - name: page
+          in: query
+          type: integer
+          description: pagination parameter, must be greater than 1
+          default: 1
+        - name: size
+          in: query
+          type: integer
+          description: page size
+          default: 10
       responses:
         200:
-          description: List of approved doctors
-          type: array
-          items:
-            schema:
-              $ref: '#/doctor_definitions/doctor_info'
-
+          description: List of matched doctors
+          schema:
+            type: object
+            properties:
+              doctors:
+                type: array
+                items:
+                  $ref: './doctor_crud_api.yml#/doctor_definitions/doctor_info'
         default:
           description: Error response
           schema:
@@ -71,18 +83,17 @@ doctor:
       tags:
         - doctor
         - delete
-      parameter:
-        - name: info
-          in: body
-          schema:
-            required:
-              - id
-            $ref: '#/definitions/doctor_info'
+      parameters:
+        - name: id
+          in: query
+          required: true
+          type: integer
       responses:
         200:
         default:
           description: Error response
-          $ref: './definitions.yml#/error'
+          schema:
+            $ref: './definitions.yml#/error'
 
 doctor_definitions:
   doctor_info:

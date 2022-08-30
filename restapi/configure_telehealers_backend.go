@@ -23,7 +23,7 @@ import (
 
 type customServerOptions struct {
 	Log    string `short:"l" long:"log" description:"Log file"`
-	DBName string `long:"dbname" description:"data-base name" default:"telehealers"`
+	DBName string `long:"dbname" description:"data-base name, leave empty to toggle reading vars from env variables"`
 	DBUser string `long:"dbuser" description:"db username for login" default:"root"`
 	DBPass string `long:"dbpass" description:"db password for login" default:""`
 	DBAddr string `long:"dbaddr" description:"db address in for ip:port" default:"127.0.0.1:3306"`
@@ -47,7 +47,11 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 	swaggerLogger := *dbApis.SetupLogFile(currentOpts.Log)
 	swaggerLogger.SetPrefix("|GENCODE|")
 	api.Logger = swaggerLogger.Printf
-	dbApis.InitConnection(currentOpts.DBName, currentOpts.DBUser, currentOpts.DBPass, currentOpts.DBAddr)
+	if currentOpts.DBName != "" {
+		api.Logger("[INFO]using cmd-line opts for db-conn values")
+		dbApis.SetConnectionVars(currentOpts.DBName, currentOpts.DBUser, currentOpts.DBPass, currentOpts.DBAddr)
+	}
+	dbApis.InitConnection()
 
 	api.UseSwaggerUI()
 	// To continue using redoc as your UI, uncomment the following line
@@ -59,6 +63,7 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 	api.JSONProducer = runtime.JSONProducer()
 
 	fmt.Println("Installing profile_picture endpoint.")
+	/** Endpoint Handlers **/
 	api.GetProfilePicturesNameHandler = operations.GetProfilePicturesNameHandlerFunc(
 		customHandlers.GetProfilePictures)
 	api.ConferrencingGetRoomAccessTokenHandler = conferrencing.GetRoomAccessTokenHandlerFunc(
@@ -66,6 +71,18 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 	api.DoctorPutDoctorRegisterHandler = doctor.PutDoctorRegisterHandlerFunc(
 		func(pdrp doctor.PutDoctorRegisterParams, p *models.Principal) middleware.Responder {
 			return dbApis.RegisterDoctor(pdrp)
+		})
+	api.DoctorPostDoctorUpdateHandler = doctor.PostDoctorUpdateHandlerFunc(
+		func(pdup doctor.PostDoctorUpdateParams, p *models.Principal) middleware.Responder {
+			return dbApis.UpdateDoctor(pdup)
+		})
+	api.DoctorDeleteDoctorRemoveHandler = doctor.DeleteDoctorRemoveHandlerFunc(
+		func(ddrp doctor.DeleteDoctorRemoveParams, p *models.Principal) middleware.Responder {
+			return dbApis.RemoveDoctor(ddrp)
+		})
+	api.DoctorGetDoctorFindHandler = doctor.GetDoctorFindHandlerFunc(
+		func(gdfp doctor.GetDoctorFindParams, p *models.Principal) middleware.Responder {
+			return dbApis.FindDoctor(gdfp)
 		})
 
 	api.PreServerShutdown = func() {}
