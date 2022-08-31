@@ -6,6 +6,7 @@ package apis
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"os"
 	"strings"
 	"time"
@@ -31,11 +32,17 @@ const (
 	//columns: name, email, phone, about, profile_picture
 	//Constraint: Unique email
 	doctorTbl = "doctors"
+	//columns: name, email, phone, profile_picture
+	patientTbl = "patients"
 )
 
 const (
 	logIDFlag = "|API-HANDLER|"
 )
+
+func newQueryError(errMsg string) error {
+	return errors.New(queryErrorTag + errMsg)
+}
 
 func SetupLogFile(fileName string) *log.Logger {
 	file, err := os.OpenFile(fileName,

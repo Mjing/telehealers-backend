@@ -2,7 +2,6 @@
 package apis
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/go-openapi/runtime/middleware"
@@ -21,38 +20,40 @@ var (
 
 const queryErrorTag = "[Query Error]"
 
-func newQueryError(errMsg string) error {
-	return errors.New(queryErrorTag + errMsg)
-}
-
-func makeInsertDocQuery(docInfo *models.DoctorInfo) (string, error) {
-	if docInfo.Name == "" || docInfo.Email == "" || docInfo.Phone == "" {
-		return "", newQueryError("doctor name, email or phone can't be empty")
+func makeInsertDocQuery(doctor *models.DoctorInfo) (query string, queryArgs []any, err error) {
+	if doctor.Name == "" || doctor.Email == "" || doctor.Phone == "" {
+		err = newQueryError("doctor name, email or phone can't be empty")
+		return
 	}
-	columns := "name, email, phone"
-	values := fmt.Sprintf("'%v','%v','%v'", docInfo.Name,
-		docInfo.Email, docInfo.Phone)
-	if docInfo.About != "" {
-		columns += ", about"
-		values += fmt.Sprintf(",'%v'", docInfo.About)
+	columns := "name,email,phone"
+	values := "?,?,?"
+	queryArgs = append(queryArgs, doctor.Name)
+	queryArgs = append(queryArgs, doctor.Email)
+	queryArgs = append(queryArgs, doctor.Phone)
+	if doctor.About != "" {
+		columns += ",about"
+		values += ",?"
+		queryArgs = append(queryArgs, doctor.About)
 	}
-	if docInfo.ProfilePicture != 0 {
-		columns += ", profile_picture"
-		values += fmt.Sprintf(", %v", docInfo.ProfilePicture)
+	if doctor.ProfilePictureID != 0 {
+		columns += ",profile_picture"
+		values += ",?"
+		queryArgs = append(queryArgs, doctor.ProfilePictureID)
 	}
-	return fmt.Sprintf(insertDocQuery, columns, values), nil
+	query = fmt.Sprintf(insertDocQuery, columns, values)
+	return
 }
 
 /** Main function to register doctor into the system.
 TODO: Create register process: Apply->Verify->Approve
 **/
 func RegisterDoctor(param doctor.PutDoctorRegisterParams) middleware.Responder {
-	query, queryErr := makeInsertDocQuery(param.Info)
+	query, queryArgs, queryErr := makeInsertDocQuery(param.Info)
 	if queryErr != nil {
 		logger.Printf("[Error]bad input:%v", queryErr.Error())
 		return doctor.NewPutDoctorRegisterDefault(400).WithPayload(models.Error(queryErr.Error()))
 	}
-	if _, _, execErr := ExecDataUpdateQuery(query); execErr != nil {
+	if _, _, execErr := ExecDataUpdateQuery(query, queryArgs...); execErr != nil {
 		logger.Printf("[Error]doctor register db functionality:%v", execErr)
 		if duplicateEntryError(execErr) {
 			return doctor.NewPutDoctorRegisterDefault(400).WithPayload("Requested doctor already present")
@@ -75,7 +76,7 @@ func makeUpdateDoctorQuery(doc *models.DoctorInfo) (query string, queryArgs []an
 	if doc.RegistrationID != "" {
 		return "", queryArgs, newQueryError("registration_id can't be updated")
 	}
-	if (doc.Name == "") && (doc.Phone == "") && (doc.About == "") && (doc.ProfilePicture == 0) {
+	if (doc.Name == "") && (doc.Phone == "") && (doc.About == "") && (doc.ProfilePictureID == 0) {
 		return "", queryArgs, newQueryError("one of name, phone, about, profile_picture is needed")
 	}
 	updateQueryListString(&cond, "id", ",")
@@ -92,9 +93,9 @@ func makeUpdateDoctorQuery(doc *models.DoctorInfo) (query string, queryArgs []an
 		updateQueryListString(&set, "about", ",")
 		queryArgs = append(queryArgs, doc.About)
 	}
-	if doc.ProfilePicture != 0 {
+	if doc.ProfilePictureID != 0 {
 		updateQueryListString(&set, "profile_picture", ",")
-		queryArgs = append(queryArgs, doc.ProfilePicture)
+		queryArgs = append(queryArgs, doc.ProfilePictureID)
 	}
 	return fmt.Sprintf(updateDocQuery, set, cond), queryArgs, nil
 }
@@ -148,7 +149,7 @@ func makeFindDoctorQuery(param doctor.GetDoctorFindParams) (query string, queryA
 	} else {
 		err = newQueryError("one of id or name_containing param needed")
 	}
-	logger.Printf("query:%v args:%v err:%v", query, queryArgs, err)
+	logger.Printf("[INFO]query:%v args:%v err:%v", query, queryArgs, err)
 	return
 }
 
@@ -172,7 +173,7 @@ func FindDoctor(param doctor.GetDoctorFindParams) middleware.Responder {
 	for rows.Next() {
 		docData := &models.DoctorInfo{}
 		if scanErr := rows.Scan(&docData.ID, &docData.Name, &docData.Email,
-			&docData.Phone, &docData.About, &docData.ProfilePicture); scanErr != nil {
+			&docData.Phone, &docData.About, &docData.ProfilePictureID); scanErr != nil {
 			logger.Printf("[Error]doctor data scan error:%v", scanErr)
 			return doctor.NewGetDoctorFindDefault(500).WithPayload("internal db error in data read")
 		}

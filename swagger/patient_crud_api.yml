@@ -1,9 +1,9 @@
-# Doctor CRUD APIs
-doctor:
+# patient CRUD APIs
+patient:
   register:
     put:
       tags:
-        - doctor
+        - patient
         - register
       parameters:
         - name: info
@@ -13,8 +13,7 @@ doctor:
               - name
               - email
               - phone
-              - registration_id
-            $ref: '#/doctor_definitions/doctor_info'
+            $ref: '#/patient_definitions/patient_info'
       responses:
         200:
           description: Succcess   
@@ -25,7 +24,7 @@ doctor:
   update:
     post:
       tags:
-        - doctor
+        - patient
         - update
       parameters:
         - name: info
@@ -33,7 +32,7 @@ doctor:
           schema:
             required:
               - id
-            $ref: '#/doctor_definitions/doctor_info'
+            $ref: '#/patient_definitions/patient_info'
       responses:
         200:
           description: Update successful
@@ -44,7 +43,7 @@ doctor:
   find:
     get:
       tags:
-        - doctor
+        - patient
         - read
       parameters:
         - name: id
@@ -54,7 +53,7 @@ doctor:
         - name: name_containing
           in: query
           type: string
-          description: find doctors with name containing this string
+          description: find patients with name containing this string
         - name: page
           in: query
           type: integer
@@ -67,14 +66,14 @@ doctor:
           default: 10
       responses:
         200:
-          description: List of matched doctors
+          description: List of matched patients
           schema:
             type: object
             properties:
-              doctors:
+              patients:
                 type: array
                 items:
-                  $ref: './doctor_crud_api.yml#/doctor_definitions/doctor_info'
+                  $ref: './patient_crud_api.yml#/patient_definitions/patient_info'
         default:
           description: Error response
           schema:
@@ -82,7 +81,7 @@ doctor:
   remove:
     delete:
       tags:
-        - doctor
+        - patient
         - delete
       parameters:
         - name: id
@@ -96,8 +95,8 @@ doctor:
           schema:
             $ref: './definitions.yml#/error'
 
-doctor_definitions:
-  doctor_info:
+patient_definitions:
+  patient_info:
     type: object
     properties:
       id:
@@ -109,11 +108,6 @@ doctor_definitions:
         type: string
       phone:
         type: string
-      about:
-        type: string
       profile_picture_id:
         type: integer
         description: system id for profile picture
-      registration_id:
-        description: 'Certification id, for practice license'
-        type: string

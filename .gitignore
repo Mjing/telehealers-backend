@@ -1,6 +1,11 @@
 *.out
 *.obj
 models
+flattened_swagger.yml
+.vscode
+Windows
+*.env
+data_dir
 restapi/operations
 restapi/doc.go
 restapi/server.go

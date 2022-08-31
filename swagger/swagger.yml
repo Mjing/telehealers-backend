@@ -39,6 +39,7 @@ paths:
           description: Error response
           schema:
             $ref: './definitions.yml#/error'
+  # Doctor CRUD APIs
   /doctor/register:
     $ref: './doctor_crud_api.yml#/doctor/register'
   /doctor/update:
@@ -47,6 +48,15 @@ paths:
     $ref: './doctor_crud_api.yml#/doctor/remove'
   /doctor/find:
     $ref: './doctor_crud_api.yml#/doctor/find'
+  # Patient CRUD APIs
+  /patient/register:
+    $ref: './patient_crud_api.yml#/patient/register'
+  /patient/update:
+    $ref: './patient_crud_api.yml#/patient/update'
+  /patient/find:
+    $ref: './patient_crud_api.yml#/patient/find'
+  /patient/remove:
+    $ref: './patient_crud_api.yml#/patient/remove'
   /book_appointment:
     post:
       description: Book appointment

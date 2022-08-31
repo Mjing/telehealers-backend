@@ -1,0 +1,170 @@
+package apis
+
+import (
+	"fmt"
+
+	"github.com/go-openapi/runtime/middleware"
+	"telehealers.in/router/models"
+	"telehealers.in/router/restapi/operations/patient"
+)
+
+var (
+	insertPatQuery = "INSERT INTO " + patientTbl + " (%v) VALUES (%v)"
+	updatePatQuery = "UPDATE " + patientTbl + " SET %v WHERE %v"
+	deletePatQuery = "DELETE FROM " + patientTbl + " WHERE %v"
+	findPatQuery   = "SELECT id, name, email, phone, profile_picture FROM " +
+		patientTbl + " WHERE "
+)
+
+func makeInsertPatQuery(patient *models.PatientInfo) (query string, queryArgs []any, err error) {
+	if patient.Name == "" || patient.Email == "" || patient.Phone == "" {
+		err = newQueryError("patient name, email or phone can't be empty")
+		return
+	}
+	columns := "name,email,phone"
+	values := "?,?,?"
+	queryArgs = append(queryArgs, patient.Name)
+	queryArgs = append(queryArgs, patient.Email)
+	queryArgs = append(queryArgs, patient.Phone)
+	if patient.ProfilePictureID != 0 {
+		columns += ",profile_picture"
+		values += ",?"
+		queryArgs = append(queryArgs, patient.ProfilePictureID)
+	}
+	query = fmt.Sprintf(insertPatQuery, columns, values)
+	return
+}
+
+/** Main function to register patient into the system.
+TODO: Create register process: Apply->Verify->Approve
+**/
+func RegisterPatient(param patient.PutPatientRegisterParams) middleware.Responder {
+	query, queryArgs, queryErr := makeInsertPatQuery(param.Info)
+	if queryErr != nil {
+		logger.Printf("[Error]bad input:%v", queryErr.Error())
+		return patient.NewPutPatientRegisterDefault(400).WithPayload(models.Error(queryErr.Error()))
+	}
+	if _, _, execErr := ExecDataUpdateQuery(query, queryArgs...); execErr != nil {
+		logger.Printf("[Error]patient register db functionality:%v", execErr)
+		if duplicateEntryError(execErr) {
+			return patient.NewPutPatientRegisterDefault(400).WithPayload("Requested patient already present")
+		}
+		return patient.NewPutPatientRegisterDefault(500).WithPayload("Internal error")
+	}
+	return patient.NewPutPatientRegisterOK()
+}
+
+/** Function to create patient update query.
+query,queryArgs are to be used together in exec-function **/
+func makeUpdatePatQuery(pat *models.PatientInfo) (query string, queryArgs []any, err error) {
+	var set, cond string
+	if pat.ID == 0 {
+		return "", queryArgs, newQueryError("non-zero id required for update")
+	}
+	if pat.Email != "" {
+		return "", queryArgs, newQueryError("email can't be updated")
+	}
+	if (pat.Name == "") && (pat.Phone == "") && (pat.ProfilePictureID == 0) {
+		return "", queryArgs, newQueryError("one of name, phone, about, profile_picture is needed")
+	}
+	updateQueryListString(&cond, "id", ",")
+
+	if pat.Name != "" {
+		updateQueryListString(&set, "name", ",")
+		queryArgs = append(queryArgs, pat.Name)
+	}
+	if pat.Phone != "" {
+		updateQueryListString(&set, "phone", ",")
+		queryArgs = append(queryArgs, pat.Phone)
+	}
+	if pat.ProfilePictureID != 0 {
+		updateQueryListString(&set, "profile_picture", ",")
+		queryArgs = append(queryArgs, pat.ProfilePictureID)
+	}
+	query = fmt.Sprintf(updatePatQuery, set, cond)
+	return
+}
+
+/** Main function to update patient data in patientTbl **/
+func UpdatePatient(param patient.PostPatientUpdateParams) middleware.Responder {
+	query, queryArgs, queryErr := makeUpdatePatQuery(param.Info)
+	if queryErr != nil {
+		logger.Printf("[Error]Bad request:%v", queryErr)
+		return patient.NewPostPatientUpdateDefault(400).WithPayload(models.Error(queryErr.Error()))
+	}
+	if _, _, err := ExecDataUpdateQuery(query, queryArgs...); err != nil {
+		logger.Printf("[Error]db error:%v", err)
+		return patient.NewPostPatientUpdateDefault(500).WithPayload("internale error")
+	}
+	return patient.NewPostPatientUpdateOK()
+}
+
+/** query,queryArgs are to be used together in exec-function **/
+func makeDeletePatQuery(patID int64) (query string, queryArgs []any, err error) {
+	if patID == 0 {
+		err = newQueryError("non-zero id required")
+		return
+	}
+	queryArgs = append(queryArgs, patID)
+	query = fmt.Sprintf(deletePatQuery, " id = ? ")
+	return
+}
+
+/** Main function to delete patient from patientTbl**/
+func RemovePatient(param patient.DeletePatientRemoveParams) middleware.Responder {
+	query, queryArgs, queryErr := makeDeletePatQuery(param.ID)
+	if queryErr != nil {
+		logger.Printf("[Error]Bad request:%v", queryErr)
+		return patient.NewDeletePatientRemoveDefault(400).WithPayload(models.Error(queryErr.Error()))
+	}
+	if _, _, err := ExecDataUpdateQuery(query, queryArgs...); err != nil {
+		logger.Printf("[Error]db error:%v", err)
+		return patient.NewDeletePatientRemoveDefault(500).WithPayload("internale error")
+	}
+	return patient.NewDeletePatientRemoveOK()
+}
+
+/** query & queryArgs, should be used together**/
+func makeFindPatQuery(param patient.GetPatientFindParams) (query string, queryArgs []any, err error) {
+	if param.ID != nil && *param.ID != 0 {
+		query = findPatQuery + "id = ?"
+		queryArgs = append(queryArgs, *param.ID)
+	} else if param.NameContaining != nil && *param.NameContaining != "" {
+		query = findPatQuery + "LOWER(name) LIKE CONCAT('%',LOWER(?),'%')"
+		queryArgs = append(queryArgs, *param.NameContaining)
+	} else {
+		err = newQueryError("one of id or name_containing param needed")
+	}
+	logger.Printf("[INFO]query:%v args:%v err:%v", query, queryArgs, err)
+	return
+}
+
+/** Main function to search patient in patientTbl **/
+func FindPatient(param patient.GetPatientFindParams) middleware.Responder {
+	query, queryArgs, queryErr := makeFindPatQuery(param)
+	if queryErr != nil {
+		logger.Printf("[Error]bad query queryErr:%v", queryErr)
+		return patient.NewGetPatientFindDefault(400).WithPayload(models.Error(queryErr.Error()))
+	}
+	ctx, cancel := getTimeOutContext()
+	defer cancel()
+	rows, err := ExecDataFetchQuery(ctx, query, queryArgs...)
+	if err != nil {
+		logger.Printf("[Error]in find pat:query:%v::params:%v::error:%v",
+			query, param, err)
+		return patient.NewGetPatientFindDefault(500).WithPayload(models.Error("internal db error"))
+	}
+	defer rows.Close()
+	fountPats := &patient.GetPatientFindOKBody{}
+	for rows.Next() {
+		patData := &models.PatientInfo{}
+		if scanErr := rows.Scan(&patData.ID, &patData.Name, &patData.Email,
+			&patData.Phone, &patData.ProfilePictureID); scanErr != nil {
+			logger.Printf("[Error]patient data scan error:%v", scanErr)
+			return patient.NewGetPatientFindDefault(500).WithPayload("internal db error in data read")
+		}
+		fountPats.Patients = append(fountPats.Patients, patData)
+	}
+	logger.Printf("[Success]find game api")
+	return patient.NewGetPatientFindOK().WithPayload(fountPats)
+}

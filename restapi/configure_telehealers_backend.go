@@ -14,6 +14,7 @@ import (
 	"telehealers.in/router/restapi/operations"
 	"telehealers.in/router/restapi/operations/conferrencing"
 	"telehealers.in/router/restapi/operations/doctor"
+	"telehealers.in/router/restapi/operations/patient"
 	customHandlers "telehealers.in/router/src/swagger_service_handler"
 	vcCustomHandlers "telehealers.in/router/src/swagger_service_handler/conferrencing"
 	dbApis "telehealers.in/router/src/swagger_service_handler/db_apis"
@@ -68,6 +69,7 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 		customHandlers.GetProfilePictures)
 	api.ConferrencingGetRoomAccessTokenHandler = conferrencing.GetRoomAccessTokenHandlerFunc(
 		vcCustomHandlers.GetAccessToken)
+	/** Doctor CRUD APIs **/
 	api.DoctorPutDoctorRegisterHandler = doctor.PutDoctorRegisterHandlerFunc(
 		func(pdrp doctor.PutDoctorRegisterParams, p *models.Principal) middleware.Responder {
 			return dbApis.RegisterDoctor(pdrp)
@@ -83,6 +85,23 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 	api.DoctorGetDoctorFindHandler = doctor.GetDoctorFindHandlerFunc(
 		func(gdfp doctor.GetDoctorFindParams, p *models.Principal) middleware.Responder {
 			return dbApis.FindDoctor(gdfp)
+		})
+	/** Patient CRUD APIs **/
+	api.PatientPutPatientRegisterHandler = patient.PutPatientRegisterHandlerFunc(
+		func(pprp patient.PutPatientRegisterParams, p *models.Principal) middleware.Responder {
+			return dbApis.RegisterPatient(pprp)
+		})
+	api.PatientPostPatientUpdateHandler = patient.PostPatientUpdateHandlerFunc(
+		func(ppup patient.PostPatientUpdateParams, p *models.Principal) middleware.Responder {
+			return dbApis.UpdatePatient(ppup)
+		})
+	api.PatientGetPatientFindHandler = patient.GetPatientFindHandlerFunc(
+		func(gpfp patient.GetPatientFindParams, p *models.Principal) middleware.Responder {
+			return dbApis.FindPatient(gpfp)
+		})
+	api.PatientDeletePatientRemoveHandler = patient.DeletePatientRemoveHandlerFunc(
+		func(dprp patient.DeletePatientRemoveParams, p *models.Principal) middleware.Responder {
+			return dbApis.RemovePatient(dprp)
 		})
 
 	api.PreServerShutdown = func() {}
