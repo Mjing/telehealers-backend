@@ -50,36 +50,55 @@ paths:
     $ref: './doctor_crud_api.yml#/doctor/find'
   # Patient CRUD APIs
   /patient/register:
-    $ref: './patient_crud_api.yml#/patient/register'
+    $ref: './patient_crud_api.yml#/register'
   /patient/update:
-    $ref: './patient_crud_api.yml#/patient/update'
+    $ref: './patient_crud_api.yml#/update'
   /patient/find:
-    $ref: './patient_crud_api.yml#/patient/find'
+    $ref: './patient_crud_api.yml#/find'
   /patient/remove:
-    $ref: './patient_crud_api.yml#/patient/remove'
-  /book_appointment:
-    post:
-      description: Book appointment
-      parameters:
-        - name: doctor_id
-          in: query
-          type: string
-          required: true
-        - name: patient_id
-          in: query
-          type: string
-          required: true
-        - name: booking_time
-          in: query
-          type: integer
-          required: true
-      responses:
-        200:
-          description: Success
-        default:
-          description: Fails
-          schema:
-            $ref:  './definitions.yml#/error'
+    $ref: './patient_crud_api.yml#/remove'
+  # Patient Health Info APIs
+  /patient/health_info/add:
+    $ref: './patient_health_info_crud_api.yml#/add'
+  /patient/health_info/find:
+    $ref: './patient_health_info_crud_api.yml#/find'
+  # Appointment CRUD APIs
+  /appointment/register:
+    $ref: './appointment_crud_api.yml#/register'
+  /appointment/update:
+    $ref: './appointment_crud_api.yml#/update'
+  /appointment/remove:
+    $ref: './appointment_crud_api.yml#/remove'
+  /appointment/find:
+    $ref: './appointment_crud_api.yml#/find'
+  # Medicine CRUD APIs
+  /medicine/register:
+    $ref: './entity_crud_api.yml#/register'
+  /medicine/remove:
+    $ref: './entity_crud_api.yml#/remove'
+  /medicine/update:
+    $ref: './entity_crud_api.yml#/update'
+  /medicine/find:
+    $ref: './entity_crud_api.yml#/find'
+  # Test CRUD APIs
+  /med_test/register:
+    $ref: './entity_crud_api.yml#/register'
+  /med_test/remove:
+    $ref: './entity_crud_api.yml#/remove'
+  /med_test/update:
+    $ref: './entity_crud_api.yml#/update'
+  /med_test/find:
+    $ref: './entity_crud_api.yml#/find'
+  # Advices CRUD APIs
+  /advice/register:
+    $ref: './entity_crud_api.yml#/register'
+  /advice/remove:
+    $ref: './entity_crud_api.yml#/remove'
+  /advice/update:
+    $ref: './entity_crud_api.yml#/update'
+  /advice/find:
+    $ref: './entity_crud_api.yml#/find'
+  
   /room_access_token:
     get:
       description: Returns a room access token. An access token is required by the room to perform any action.

@@ -3,8 +3,10 @@ package apis
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
+	"github.com/go-openapi/runtime/middleware"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -41,6 +43,42 @@ func InitConnection() (err error) {
 	}
 	logger.Printf("[%v]DB Connected", logIDFlag)
 	return
+}
+
+/** DB API Helper
+	Both functions create context locally if need be add another paramerter
+		to take context variable
+**/
+
+func UpdateAndRespond(data UpdateAPIs) middleware.Responder {
+	queryParams, queryErr := data.makeQuery()
+	if queryErr != nil {
+		logger.Printf("[Query Error]query:%v|error:%v", queryParams.Query, queryErr)
+		return data.errResponse(400, queryErr)
+	}
+	lastId, rowId, updateErr := ExecDataUpdateQuery(queryParams.Query, queryParams.QueryArgs...)
+	if updateErr != nil {
+		logger.Printf("[DB Update Error]query:%v|err:%v", queryParams.Query, updateErr)
+		return data.errResponse(500, errors.New("Internal db error"))
+	}
+	return data.okResponse(lastId, rowId)
+}
+
+func FetchAndRespond(data ReadAPIs) middleware.Responder {
+	queryParams, queryErr := data.makeQuery()
+	if queryErr != nil {
+		logger.Printf("[Query Error]query:%v|error:%v", queryParams.Query, queryErr)
+		return data.errResponse(400, queryErr)
+	}
+	ctx, cancel := getTimeOutContext()
+	defer cancel()
+	foundRows, fetchErr := ExecDataFetchQuery(ctx, queryParams.Query, queryParams.QueryArgs...)
+	if fetchErr != nil {
+		logger.Printf("Query[Fetch Error]query:%v|error:%v", fetchErr, queryParams.Query)
+		return data.errResponse(500, errors.New("Internal db read error"))
+	}
+	data.scanRows(foundRows)
+	return data.okResponse(0, 0)
 }
 
 /** Execute Insert queries.

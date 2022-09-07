@@ -1,0 +1,88 @@
+# Entity crud APIs include: Medicine, Advice, Tests
+# Entities are simple objects containing a name and description
+register:
+  put:
+    tags:
+      - register
+      - entity
+    parameters:
+      - name: info
+        in: body
+        schema:
+          required:
+            - name
+          $ref: '#/definitions/entity'
+    responses:
+      200:
+        description: Success
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+
+update:
+  post:
+    tags:
+      - update
+      - entity
+    parameters:
+      - name: info
+        in: body
+        schema:
+          required:
+            - id
+          $ref: '#/definitions/entity'
+    responses:
+      200:
+        description: Success
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+
+find:
+  get:
+    tags:
+      - read
+      - entity
+    parameters:
+      - name: nameContains
+        in: query
+        description: Name containing this string
+        type: string
+        required: true
+    responses:
+      200:
+        schema:
+          $ref: '#/definitions/entity'
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+remove:
+  delete:
+    tags:
+      - delete
+      - entity
+    parameters:
+      - name: id
+        in: query
+        type: integer
+        required: true
+    responses:
+      200:
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+      
+definitions:
+  entity:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      description:
+        type: string  

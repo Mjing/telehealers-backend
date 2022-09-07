@@ -1,101 +1,101 @@
 # patient CRUD APIs
-patient:
-  register:
-    put:
-      tags:
-        - patient
-        - register
-      parameters:
-        - name: info
-          in: body
-          schema:
-            required:
-              - name
-              - email
-              - phone
-            $ref: '#/patient_definitions/patient_info'
-      responses:
-        200:
-          description: Succcess   
-        default:
-          description: Error Response
-          schema:
-            $ref: './definitions.yml#/error'
-  update:
-    post:
-      tags:
-        - patient
-        - update
-      parameters:
-        - name: info
-          in: body
-          schema:
-            required:
-              - id
-            $ref: '#/patient_definitions/patient_info'
-      responses:
-        200:
-          description: Update successful
-        default:
-          description: Error
-          schema:
-            $ref: './definitions.yml#/error'
-  find:
-    get:
-      tags:
-        - patient
-        - read
-      parameters:
-        - name: id
-          in: query
-          type: integer
-          description: System id number
-        - name: name_containing
-          in: query
-          type: string
-          description: find patients with name containing this string
-        - name: page
-          in: query
-          type: integer
-          description: pagination parameter, must be greater than 1
-          default: 1
-        - name: size
-          in: query
-          type: integer
-          description: page size
-          default: 10
-      responses:
-        200:
-          description: List of matched patients
-          schema:
-            type: object
-            properties:
-              patients:
-                type: array
-                items:
-                  $ref: './patient_crud_api.yml#/patient_definitions/patient_info'
-        default:
-          description: Error response
-          schema:
-            $ref: './definitions.yml#/error'
-  remove:
-    delete:
-      tags:
-        - patient
-        - delete
-      parameters:
-        - name: id
-          in: query
-          required: true
-          type: integer
-      responses:
-        200:
-        default:
-          description: Error response
-          schema:
-            $ref: './definitions.yml#/error'
 
-patient_definitions:
+register:
+  put:
+    tags:
+      - patient
+      - register
+    parameters:
+      - name: info
+        in: body
+        schema:
+          required:
+            - name
+            - email
+            - phone
+          $ref: '#/definitions/patient_info'
+    responses:
+      200:
+        description: Succcess   
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+update:
+  post:
+    tags:
+      - patient
+      - update
+    parameters:
+      - name: info
+        in: body
+        schema:
+          required:
+            - id
+          $ref: '#/definitions/patient_info'
+    responses:
+      200:
+        description: Update successful
+      default:
+        description: Error
+        schema:
+          $ref: './definitions.yml#/error'
+find:
+  get:
+    tags:
+      - patient
+      - read
+    parameters:
+      - name: id
+        in: query
+        type: integer
+        description: System id number
+      - name: name_containing
+        in: query
+        type: string
+        description: find patients with name containing this string
+      - name: page
+        in: query
+        type: integer
+        description: pagination parameter, must be greater than 1
+        default: 1
+      - name: size
+        in: query
+        type: integer
+        description: page size
+        default: 10
+    responses:
+      200:
+        description: List of matched patients
+        schema:
+          type: object
+          properties:
+            patients:
+              type: array
+              items:
+                $ref: './patient_crud_api.yml#/definitions/patient_info'
+      default:
+        description: Error response
+        schema:
+          $ref: './definitions.yml#/error'
+remove:
+  delete:
+    tags:
+      - patient
+      - delete
+    parameters:
+      - name: id
+        in: query
+        required: true
+        type: integer
+    responses:
+      200:
+      default:
+        description: Error response
+        schema:
+          $ref: './definitions.yml#/error'
+
+definitions:
   patient_info:
     type: object
     properties:

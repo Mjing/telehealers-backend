@@ -1,0 +1,73 @@
+# APIs related to patient health info data
+add:
+  put:
+    tags:
+      - patient_health_info
+      - register
+    parameters:
+      - name: info
+        in: body
+        required: true
+        schema:
+          required:
+            - date
+            - time
+            - patient_id
+          $ref: '#/definitions/health_info'
+    responses:
+      200:
+        description: Success
+      default:
+        description: Error
+        schema:
+          $ref: './definitions.yml#/error'
+
+find:
+  get:
+    tags:
+      - patient_health_info
+      - register
+    description: Returns latest health info for a patient or info at the time of appointment
+    parameters:
+      - name: patient_id
+        type: integer
+        in: query
+      - name: appointment_id
+        type: integer
+        in: query
+    responses:
+      200:
+        description: Patient info
+        schema:
+          $ref: '#/definitions/health_info'
+      default:
+        description: Error
+        schema:
+          $ref: './definitions.yml#/error'
+
+definitions:
+  health_info:
+    type: object
+    properties:
+      id:
+        description: internal system id
+        type: integer
+      patient_id:
+        type: integer
+      date:
+        type: string
+        description: date in dd/mm/yyyy format
+      time:
+        type: string
+        description: time in 24-hr format
+      complaint: 
+        description: main complaint or comment on general health
+        type: string
+      height:
+        type: string
+      weight:
+        type: string
+      blood_pressure:
+        type: string
+      Gender:
+        type: string

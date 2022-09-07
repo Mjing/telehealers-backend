@@ -12,9 +12,11 @@ import (
 	"github.com/rs/cors"
 	"telehealers.in/router/models"
 	"telehealers.in/router/restapi/operations"
+	"telehealers.in/router/restapi/operations/appointment"
 	"telehealers.in/router/restapi/operations/conferrencing"
 	"telehealers.in/router/restapi/operations/doctor"
 	"telehealers.in/router/restapi/operations/patient"
+	"telehealers.in/router/restapi/operations/patient_health_info"
 	customHandlers "telehealers.in/router/src/swagger_service_handler"
 	vcCustomHandlers "telehealers.in/router/src/swagger_service_handler/conferrencing"
 	dbApis "telehealers.in/router/src/swagger_service_handler/db_apis"
@@ -103,7 +105,20 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 		func(dprp patient.DeletePatientRemoveParams, p *models.Principal) middleware.Responder {
 			return dbApis.RemovePatient(dprp)
 		})
-
+	/** Patient Health INfo APIs **/
+	api.PatientHealthInfoPutPatientHealthInfoAddHandler = patient_health_info.PutPatientHealthInfoAddHandlerFunc(
+		dbApis.AddHealthInfoAPI)
+	api.PatientHealthInfoGetPatientHealthInfoFindHandler = patient_health_info.GetPatientHealthInfoFindHandlerFunc(
+		dbApis.FindHealthInfoAPI)
+	/** Appointment CRUD APIs **/
+	api.AppointmentPutAppointmentRegisterHandler = appointment.PutAppointmentRegisterHandlerFunc(
+		dbApis.RegisterppointmentAPI)
+	api.AppointmentPostAppointmentUpdateHandler = appointment.PostAppointmentUpdateHandlerFunc(
+		dbApis.UpdateAppointmentAPI)
+	api.AppointmentDeleteAppointmentRemoveHandler = appointment.DeleteAppointmentRemoveHandlerFunc(
+		dbApis.RemoveAppointmentAPI)
+	api.AppointmentGetAppointmentFindHandler = appointment.GetAppointmentFindHandlerFunc(
+		dbApis.FindAppointmentAPI)
 	api.PreServerShutdown = func() {}
 
 	api.ServerShutdown = func() {}

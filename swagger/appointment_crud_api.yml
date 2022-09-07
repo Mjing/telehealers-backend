@@ -1,0 +1,138 @@
+# APIs Related to appointment CRUDs
+
+register:
+  put:
+    tags:
+      - appointment
+      - register
+    parameters:
+      - name: appointment
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/appointment_info'
+          required:
+            - doctor_id
+            - requested_start_time
+            - requested_end_time
+            - patient_id
+            - patient_health_info_id
+    responses:
+      200:
+        description: Succcess
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+update:
+  post:
+    tags:
+      - appointment
+      - update
+    description: "Notice: use this endpoint only top update doctor, patient, requested start&end time and date.Handle complaint updation appropriately."
+    parameters:
+      - name: info
+        in: body
+        schema:
+          required:
+            - id
+          $ref: '#/definitions/appointment_info'
+    responses:
+      200:
+        description: Update successful
+      default:
+        description: Error
+        schema:
+          $ref: './definitions.yml#/error'
+remove:
+  delete:
+    tags:
+      - appointment
+      - delete
+    parameters:
+      - name: id
+        in: query
+        required: true
+        type: integer
+    responses:
+      200:
+      default:
+        description: Error response
+        schema:
+          $ref: './definitions.yml#/error'
+find:
+  get:
+    tags:
+      - appointment
+      - find
+    description: Fetch appointments from latest to last
+    parameters:
+      - name: on_date
+        description: Find appointments on date (format yyyy-mm-dd)
+        in: query
+        type: string
+        required: true
+      - name: patient_id
+        in: query
+        type: integer
+      - name: doctor_id
+        in: query
+        type: integer
+      - name: page
+        in: query
+        type: integer
+        required: true
+        default: 1
+      - name: size
+        in: query
+        type: integer
+        required: true
+        default: 10
+    responses:
+      200:
+        description: List of matched appointments
+        schema:
+          type: object
+          properties:
+            appointments:
+              type: array
+              items:
+                $ref: './appointment_crud_api.yml#/definitions/appointment_info'
+      default:
+        description: Error response
+        schema:
+          $ref: './definitions.yml#/error'
+
+definitions:
+  appointment_info:
+    type: object
+    properties:
+      id:
+        description: internal system id as returned by APIs
+        type: integer
+      doctor_id:
+        description: doctor assigned to serve this appointment
+        type: integer
+      patient_id:
+        description: patient assigned to serve this appointment
+        type: integer
+      date:
+        type: string
+        description: date in yyyy-mm-dd format e.g 2022-02-22
+      start_time_requested:
+        type: string
+        description: 'time in hh:mm:ss format' 
+      end_time_rquested:
+        type: string
+        description: 'time in hh:mm:ss format '
+      start_time:
+        description: 'Appointment start time in hh:mm:ss format'
+        type: string
+      end_time:
+        type: string
+        description: 'time in hh:mm:ss format'
+      patient_health_info_id:
+        type: integer
+      prescription_id:
+        type: integer
+

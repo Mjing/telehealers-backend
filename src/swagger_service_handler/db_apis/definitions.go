@@ -4,14 +4,13 @@
 package apis
 
 import (
-	"context"
 	"database/sql"
-	"errors"
 	"os"
-	"strings"
 	"time"
 
 	"log"
+
+	"github.com/go-openapi/runtime/middleware"
 )
 
 var (
@@ -28,41 +27,46 @@ var (
 
 //DB constants
 const (
+	//General update query
+	generalInsertQuery = "INSERT INTO %v (%v) VALUES " //...followed by values in ()
+	generalUpdateQuery = "UPDATE %v SET %v WHERE %v"
+	generalDeleteQuery = "DELETE FROM %v WHERE %v"
+	generalFetchQuery  = "SELECT %v FROM %v WHERE %v"
+
 	//Table names
 	//columns: name, email, phone, about, profile_picture
 	//Constraint: Unique email
 	doctorTbl = "doctors"
 	//columns: name, email, phone, profile_picture
 	patientTbl = "patients"
+	//columns: date, requested_start_time, requested_end_time, start_time,
+	//end_time, doctor_id, patient_id, prescription_id,patient_health_info_id
+	aptTbl          = "appointments"
+	aptFetchColumns = "id, doctor_id, patient_id, patient_health_info_id, prescription_id, date, start_time, end_time, requested_start_time, requested_end_time"
+	//columns:gender,height,weight,bp,health_complaints,patient_id,created_on
+	patienHealthInfoTbl = "patient_health_info"
 )
 
 const (
 	logIDFlag = "|API-HANDLER|"
 )
 
-func newQueryError(errMsg string) error {
-	return errors.New(queryErrorTag + errMsg)
+//Struct to work with github.com/go-sql-driver/mysql sql function
+//attributes should be used together
+type sqlExeParams struct {
+	Query     string //MySQL query with positional parameters
+	QueryArgs []any  //Value of positional parameters
 }
 
-func SetupLogFile(fileName string) *log.Logger {
-	file, err := os.OpenFile(fileName,
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Printf("[Error]|%v|In openning log file:%v", logIDFlag, err)
-		log.Print("[INFO]Directing logs to stdout")
-	} else {
-		log.Printf("Setting log to %v", fileName)
-		logger.SetOutput(file)
-	}
-	logger.SetFlags(log.LstdFlags | log.Lshortfile)
-	logger.SetPrefix(logIDFlag)
-	return logger
+type UpdateAPIs interface {
+	makeQuery() (sqlExeParams, error)
+	//code 2xx not allowed for error response
+	errResponse(httpStatusCode int, err error) middleware.Responder
+	//Only status code 200 will be responded
+	okResponse(lastId, rowAffected int64) middleware.Responder
 }
-
-func getTimeOutContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.TODO(), queryTimeOutDuration)
-}
-
-func duplicateEntryError(err error) bool {
-	return strings.Contains(err.Error(), "uplicate")
+type ReadAPIs interface {
+	UpdateAPIs
+	//In okResponse, inputs will be ignored
+	scanRows(*sql.Rows) error
 }
