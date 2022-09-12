@@ -14,7 +14,9 @@ register:
           $ref: '#/definitions/entity'
     responses:
       200:
-        description: Success
+        description: id of registered data
+        schema:
+          $ref: './definitions.yml#/passed_reg_info'
       default:
         description: Error Response
         schema:
@@ -45,16 +47,36 @@ find:
     tags:
       - read
       - entity
+    description: Find matches, in case of no param all data will be fetched
     parameters:
       - name: nameContains
         in: query
         description: Name containing this string
         type: string
+      - name: id
+        in: query
+        description: System id of resource
+        type: integer
+      - name: page
+        in: query
+        type: integer
+        default: 1
+        required: true
+      - name: page_size
+        in: query
+        type: integer
+        default: 10
         required: true
     responses:
       200:
+        description: List of matched entries
         schema:
-          $ref: '#/definitions/entity'
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: './entity_crud_api.yml#/definitions/entity'
       default:
         description: Error Response
         schema:
@@ -62,7 +84,7 @@ find:
 remove:
   delete:
     tags:
-      - delete
+      - remove
       - entity
     parameters:
       - name: id

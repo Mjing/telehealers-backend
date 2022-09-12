@@ -23,9 +23,12 @@ DROP TABLE IF EXISTS `advices`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `advices` (
-  `name` varchar(255) NOT NULL,
-  `description` varchar(500) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  `description` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniqNm` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -69,13 +72,15 @@ DROP TABLE IF EXISTS `appointments`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `appointments` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `requested_start_time` datetime NOT NULL,
-  `requested_end_time` datetime NOT NULL,
-  `start_time` datetime DEFAULT NULL,
-  `end_time` datetime DEFAULT NULL,
+  `requested_start_time` time DEFAULT NULL,
+  `requested_end_time` time DEFAULT NULL,
+  `start_time` time DEFAULT NULL,
+  `end_time` time DEFAULT NULL,
   `doctor_id` int NOT NULL,
   `patient_id` int NOT NULL,
   `prescription_id` int DEFAULT NULL,
+  `patient_health_info_id` int DEFAULT NULL,
+  `date` date DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `doctor_id` (`doctor_id`),
   KEY `patient_id` (`patient_id`),
@@ -134,7 +139,7 @@ CREATE TABLE `doctors` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `doctors_emails` (`email`),
   UNIQUE KEY `registration` (`registration_number`)
-) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -148,6 +153,31 @@ INSERT INTO `doctors` VALUES (56,'Dr. Oto Octavius','8@sinister6','8888666666','
 UNLOCK TABLES;
 
 --
+-- Table structure for table `med_tests`
+--
+
+DROP TABLE IF EXISTS `med_tests`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `med_tests` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  `description` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniqNm` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `med_tests`
+--
+
+LOCK TABLES `med_tests` WRITE;
+/*!40000 ALTER TABLE `med_tests` DISABLE KEYS */;
+/*!40000 ALTER TABLE `med_tests` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `medicines`
 --
 
@@ -155,9 +185,12 @@ DROP TABLE IF EXISTS `medicines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `medicines` (
-  `name` varchar(255) NOT NULL,
-  `description` varchar(500) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  `description` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniqNm` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=85 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -182,10 +215,11 @@ CREATE TABLE `patient_health_info` (
   `height` varchar(255) DEFAULT NULL,
   `weight` varchar(255) DEFAULT NULL,
   `bp` varchar(255) DEFAULT NULL,
-  `appointment_id` int NOT NULL,
   `health_complaints` varchar(255) DEFAULT NULL,
+  `patient_id` int NOT NULL,
+  `created_on` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `appointment_id` (`appointment_id`)
+  KEY `info_to_patient` (`patient_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -341,28 +375,6 @@ LOCK TABLES `specialities` WRITE;
 /*!40000 ALTER TABLE `specialities` DISABLE KEYS */;
 /*!40000 ALTER TABLE `specialities` ENABLE KEYS */;
 UNLOCK TABLES;
-
---
--- Table structure for table `tests`
---
-
-DROP TABLE IF EXISTS `tests`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `tests` (
-  `name` varchar(255) NOT NULL,
-  `description` varchar(500) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `tests`
---
-
-LOCK TABLES `tests` WRITE;
-/*!40000 ALTER TABLE `tests` DISABLE KEYS */;
-/*!40000 ALTER TABLE `tests` ENABLE KEYS */;
-UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -373,4 +385,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2022-09-04 16:46:22
+-- Dump completed on 2022-09-12 14:42:39

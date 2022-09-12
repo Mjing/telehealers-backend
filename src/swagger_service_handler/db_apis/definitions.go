@@ -31,7 +31,7 @@ const (
 	generalInsertQuery = "INSERT INTO %v (%v) VALUES " //...followed by values in ()
 	generalUpdateQuery = "UPDATE %v SET %v WHERE %v"
 	generalDeleteQuery = "DELETE FROM %v WHERE %v"
-	generalFetchQuery  = "SELECT %v FROM %v WHERE %v"
+	generalFetchQuery  = "SELECT %v FROM %v LIMIT %v, %v" //In case of conditions extend 2 position parameter
 
 	//Table names
 	//columns: name, email, phone, about, profile_picture
@@ -45,6 +45,14 @@ const (
 	aptFetchColumns = "id, doctor_id, patient_id, patient_health_info_id, prescription_id, date, start_time, end_time, requested_start_time, requested_end_time"
 	//columns:gender,height,weight,bp,health_complaints,patient_id,created_on
 	patienHealthInfoTbl = "patient_health_info"
+)
+
+//General Entities
+//Columns: name, description
+var (
+	medicineTbl = "medicines"
+	testTbl     = "med_tests"
+	adviceTbl   = "advices"
 )
 
 const (

@@ -17,6 +17,10 @@ import (
 	"telehealers.in/router/restapi/operations/doctor"
 	"telehealers.in/router/restapi/operations/patient"
 	"telehealers.in/router/restapi/operations/patient_health_info"
+	"telehealers.in/router/restapi/operations/read"
+	"telehealers.in/router/restapi/operations/register"
+	"telehealers.in/router/restapi/operations/remove"
+	"telehealers.in/router/restapi/operations/update"
 	customHandlers "telehealers.in/router/src/swagger_service_handler"
 	vcCustomHandlers "telehealers.in/router/src/swagger_service_handler/conferrencing"
 	dbApis "telehealers.in/router/src/swagger_service_handler/db_apis"
@@ -119,6 +123,25 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 		dbApis.RemoveAppointmentAPI)
 	api.AppointmentGetAppointmentFindHandler = appointment.GetAppointmentFindHandlerFunc(
 		dbApis.FindAppointmentAPI)
+	/** Entities CRUDs: Medicine, Tests, Advices **/
+	//Register
+	api.RegisterPutMedicineRegisterHandler = register.PutMedicineRegisterHandlerFunc(dbApis.RegisterMedicineAPI)
+	api.RegisterPutMedicalTestRegisterHandler = register.PutMedicalTestRegisterHandlerFunc(dbApis.RegisterTestAPI)
+	api.RegisterPutMedicalAdviceRegisterHandler = register.PutMedicalAdviceRegisterHandlerFunc(dbApis.RegisterAdviceAPI)
+	//Update
+	api.UpdatePostMedicineUpdateHandler = update.PostMedicineUpdateHandlerFunc(dbApis.UpdateMedicineAPI)
+	api.UpdatePostMedicalTestUpdateHandler = update.PostMedicalTestUpdateHandlerFunc(dbApis.UpdateMedTestAPI)
+	api.UpdatePostMedicalAdviceUpdateHandler = update.PostMedicalAdviceUpdateHandlerFunc(dbApis.UpdateAdviceAPI)
+	//remove
+	api.RemoveDeleteMedicineRemoveHandler = remove.DeleteMedicineRemoveHandlerFunc(dbApis.RemoveMedicineAPI)
+	api.RemoveDeleteMedicalTestRemoveHandler = remove.DeleteMedicalTestRemoveHandlerFunc(dbApis.RemoveMedTestAPI)
+	api.RemoveDeleteMedicalAdviceRemoveHandler = remove.DeleteMedicalAdviceRemoveHandlerFunc(dbApis.RemoveAdviceAPI)
+	//find
+	api.ReadGetMedicineFindHandler = read.GetMedicineFindHandlerFunc(dbApis.FindMedicineAPI)
+	api.ReadGetMedicalTestFindHandler = read.GetMedicalTestFindHandlerFunc(dbApis.FindMedTestAPI)
+	api.ReadGetMedicalAdviceFindHandler = read.GetMedicalAdviceFindHandlerFunc(dbApis.FindAdviceAPI)
+	/*****End OF Entity Registration **********/
+
 	api.PreServerShutdown = func() {}
 
 	api.ServerShutdown = func() {}

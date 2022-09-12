@@ -81,22 +81,22 @@ paths:
   /medicine/find:
     $ref: './entity_crud_api.yml#/find'
   # Test CRUD APIs
-  /med_test/register:
+  /medical/test/register:
     $ref: './entity_crud_api.yml#/register'
-  /med_test/remove:
+  /medical/test/remove:
     $ref: './entity_crud_api.yml#/remove'
-  /med_test/update:
+  /medical/test/update:
     $ref: './entity_crud_api.yml#/update'
-  /med_test/find:
+  /medical/test/find:
     $ref: './entity_crud_api.yml#/find'
   # Advices CRUD APIs
-  /advice/register:
+  /medical/advice/register:
     $ref: './entity_crud_api.yml#/register'
-  /advice/remove:
+  /medical/advice/remove:
     $ref: './entity_crud_api.yml#/remove'
-  /advice/update:
+  /medical/advice/update:
     $ref: './entity_crud_api.yml#/update'
-  /advice/find:
+  /medical/advice/find:
     $ref: './entity_crud_api.yml#/find'
   
   /room_access_token:

@@ -59,7 +59,10 @@ func UpdateAndRespond(data UpdateAPIs) middleware.Responder {
 	lastId, rowId, updateErr := ExecDataUpdateQuery(queryParams.Query, queryParams.QueryArgs...)
 	if updateErr != nil {
 		logger.Printf("[DB Update Error]query:%v|err:%v", queryParams.Query, updateErr)
-		return data.errResponse(500, errors.New("Internal db error"))
+		if duplicateEntryError(updateErr) {
+			return data.errResponse(400, newQueryError("entry with same name already present"))
+		}
+		return data.errResponse(500, errors.New("internal db error"))
 	}
 	return data.okResponse(lastId, rowId)
 }
@@ -75,7 +78,7 @@ func FetchAndRespond(data ReadAPIs) middleware.Responder {
 	foundRows, fetchErr := ExecDataFetchQuery(ctx, queryParams.Query, queryParams.QueryArgs...)
 	if fetchErr != nil {
 		logger.Printf("Query[Fetch Error]query:%v|error:%v", fetchErr, queryParams.Query)
-		return data.errResponse(500, errors.New("Internal db read error"))
+		return data.errResponse(500, errors.New("internal db read error"))
 	}
 	data.scanRows(foundRows)
 	return data.okResponse(0, 0)

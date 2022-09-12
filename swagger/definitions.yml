@@ -1,2 +1,9 @@
 error:
   type: string
+passed_reg_info:
+  type: object
+  description: Passed registration info
+  properties:
+    id:
+      type: integer
+      description: id of registered entity

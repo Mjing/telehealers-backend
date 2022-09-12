@@ -134,7 +134,8 @@ func (param *FindAppointment) makeQuery() (sqlReq sqlExeParams, err error) {
 		err = newQueryError("invalid on_date value")
 		return
 	}
-	condition := "(on_date = ?)"
+	condition := " WHERE (on_date = ?)"
+	orderBy := ""
 	sqlReq.QueryArgs = append(sqlReq.QueryArgs, req.OnDate)
 	if *req.DoctorID != 0 {
 		condition += " AND (doctor_id = ?)"
@@ -144,9 +145,8 @@ func (param *FindAppointment) makeQuery() (sqlReq sqlExeParams, err error) {
 		condition += " AND (patient_id = ?)"
 		sqlReq.QueryArgs = append(sqlReq.QueryArgs, *req.PatientID)
 	}
-	condition += " LIMIT ?,? ORDER BY date, requested_start_time ASC"
-	sqlReq.QueryArgs = append(sqlReq.QueryArgs, req.Size*(req.Page-1), req.Size)
-	sqlReq.Query = fmt.Sprintf(generalFetchQuery, aptFetchColumns, aptTbl, condition)
+	orderBy = " ORDER BY date, requested_start_time ASC"
+	sqlReq.Query = fmt.Sprintf(generalFetchQuery, aptFetchColumns, aptTbl+condition, req.Size*(req.Page-1), req.Size) + orderBy
 	return
 }
 
