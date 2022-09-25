@@ -48,6 +48,13 @@ paths:
     $ref: './doctor_crud_api.yml#/doctor/remove'
   /doctor/find:
     $ref: './doctor_crud_api.yml#/doctor/find'
+  ## Yet to be tested
+  /doctor/register/apply:
+    $ref: './doctor_crud_api.yml#/doctor/registration_application'
+  /doctor/register/review:
+    $ref: './doctor_crud_api.yml#/doctor/review_registration_application'
+  /doctor/login:
+    $ref: './doctor_crud_api.yml#/doctor/login'
   # Patient CRUD APIs
   /patient/register:
     $ref: './patient_crud_api.yml#/register'
@@ -57,6 +64,8 @@ paths:
     $ref: './patient_crud_api.yml#/find'
   /patient/remove:
     $ref: './patient_crud_api.yml#/remove'
+  /patient/login:
+    $ref: './patient_crud_api.yml#/login'
   # Patient Health Info APIs
   /patient/health_info/add:
     $ref: './patient_health_info_crud_api.yml#/add'

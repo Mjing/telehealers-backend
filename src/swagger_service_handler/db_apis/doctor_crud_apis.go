@@ -2,6 +2,8 @@
 package apis
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/go-openapi/runtime/middleware"
@@ -44,9 +46,11 @@ func makeInsertDocQuery(doctor *models.DoctorInfo) (query string, queryArgs []an
 	return
 }
 
-/** Main function to register doctor into the system.
+/*
+* Main function to register doctor into the system.
 TODO: Create register process: Apply->Verify->Approve
-**/
+*
+*/
 func RegisterDoctor(param doctor.PutDoctorRegisterParams) middleware.Responder {
 	query, queryArgs, queryErr := makeInsertDocQuery(param.Info)
 	if queryErr != nil {
@@ -63,8 +67,96 @@ func RegisterDoctor(param doctor.PutDoctorRegisterParams) middleware.Responder {
 	return doctor.NewPutDoctorRegisterOK()
 }
 
-/** Function to create doctor update query.
-query,queryArgs are to be used together in exec-function **/
+/** /doctor/register/apply **/
+type doctorRegistrationApplication struct {
+	doctor.PostDoctorRegisterApplyParams
+}
+
+func (req *doctorRegistrationApplication) makeQuery() (sqlQuery sqlExeParams, err error) {
+	if req.Application.DoctorInfo.RegistrationID == "" || req.Application.DoctorInfo.Name == "" || req.Application.DoctorInfo.Email == "" {
+		err = newQueryError("registration_id, name and email can't be empty")
+		return
+	}
+	columns := "registration_id, name, email, applied_on"
+	values := "?,?,?, NOW()"
+	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Application.DoctorInfo.RegistrationID, req.Application.DoctorInfo.Name, req.Application.DoctorInfo.Email)
+	if req.Application.AdditionalInfo != "" {
+		columns += ",comments"
+		values += ",?"
+		sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Application.AdditionalInfo)
+	}
+	sqlQuery.Query = "INSERT INTO " + doctorRegistrationApplicationTbl + fmt.Sprintf(" (%v) VALUES (%v)", columns, values)
+	return
+}
+
+func (*doctorRegistrationApplication) errResponse(httpStatusCode int, err error) middleware.Responder {
+	return doctor.NewPostDoctorRegisterApplyDefault(httpStatusCode).WithPayload(models.Error(err.Error()))
+}
+
+func (*doctorRegistrationApplication) okResponse(int64, int64) middleware.Responder {
+	return doctor.NewPostDoctorRegisterApplyOK()
+}
+
+func DoctorRegistrationApplicationAPI(_req doctor.PostDoctorRegisterApplyParams) middleware.Responder {
+	req := &doctorRegistrationApplication{_req}
+	return UpdateAndRespond(req)
+}
+
+/* /doctor/register/review */
+type doctorRegistrationReview struct {
+	doctor.PostDoctorRegisterReviewParams
+}
+
+func (*doctorRegistrationReview) errResponse(httpStatusCode int, err error) middleware.Responder {
+	return doctor.NewPostDoctorRegisterReviewDefault(httpStatusCode).WithPayload(models.Error(err.Error()))
+}
+
+func (*doctorRegistrationReview) okResponse(int64, int64) middleware.Responder {
+	return doctor.NewPostDoctorRegisterReviewOK()
+}
+
+func (req *doctorRegistrationReview) makeApproveQuery() (sqlQuery sqlExeParams, err error) {
+	/** inv: req is well formed **/
+	sqlQuery.Query = "INSERT INTO " + doctorTbl + " (name, email, registration_number) SELECT name, email, registration_number FROM " +
+		doctorRegistrationApplicationTbl + " WHERE id = ?"
+	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Review.ApplicationID)
+	return
+}
+
+func (req *doctorRegistrationReview) makeDenyQuery() (sqlQuery sqlExeParams, err error) {
+	/** inv: req is well formed **/
+	if req.Review.ReviewerComments == "" {
+		err = newQueryError("for denied request, reviewer comments are necessary")
+		return
+	}
+	sqlQuery.Query = "UPDATE " + doctorRegistrationApplicationTbl + " SET approved = ?, reviewer_comments = ? WHERE id = ?"
+	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Review.Approve, req.Review.ReviewerComments, req.Review.ApplicationID)
+	return
+}
+
+func (req *doctorRegistrationReview) makeQuery() (sqlQuery sqlExeParams, err error) {
+	if req.Review.ApplicationID == nil || *req.Review.ApplicationID == 0 || req.Review.Approve == nil {
+		err = newQueryError("application_id, approve params can't be empty")
+		return
+	}
+	if *req.Review.Approve {
+		return req.makeApproveQuery()
+	} else {
+		return req.makeDenyQuery()
+	}
+}
+
+func DoctorRegistrationApplicationReviewAPI(_req doctor.PostDoctorRegisterReviewParams) middleware.Responder {
+	req := &doctorRegistrationReview{_req}
+	return UpdateAndRespond(req)
+}
+
+/** End /doctor/register/review **/
+
+/*
+* Function to create doctor update query.
+query,queryArgs are to be used together in exec-function *
+*/
 func makeUpdateDoctorQuery(doc *models.DoctorInfo) (query string, queryArgs []any, err error) {
 	var set, cond string
 	if doc.ID == 0 {
@@ -182,3 +274,59 @@ func FindDoctor(param doctor.GetDoctorFindParams) middleware.Responder {
 	logger.Printf("[Success]find game api")
 	return doctor.NewGetDoctorFindOK().WithPayload(foundDocs)
 }
+
+/** /doctor/login **/
+type doctorLogin struct {
+	doctor.GetDoctorLoginParams
+	info      doctor.GetDoctorLoginOK
+	dataError error
+}
+
+func (*doctorLogin) errResponse(httpStatusCode int, err error) middleware.Responder {
+	return doctor.NewGetDoctorLoginDefault(httpStatusCode).WithPayload(models.Error(err.Error()))
+}
+
+func (data *doctorLogin) okResponse(int64, int64) middleware.Responder {
+	if data.dataError != nil {
+		logger.Printf("[Query Error] Query or DB error:%v", data.dataError)
+		return doctor.NewGetDoctorLoginDefault(400).WithPayload(models.Error(data.dataError.Error()))
+	}
+	return doctor.NewGetDoctorLoginOK().WithPayload(data.info.Payload)
+}
+
+func (req *doctorLogin) makeQuery() (sqlQuery sqlExeParams, err error) {
+	if req.Email == "" {
+		err = newQueryError("email required")
+		return
+	}
+	sqlQuery.Query = "SELECT id, name, email, phone, about, profile_picture, registration_number FROM " + doctorTbl +
+		" WHERE email = ? AND password = ?"
+	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Email, req.Password)
+	return
+}
+
+func (resp *doctorLogin) scanRows(rows *sql.Rows) error {
+	scannedRows := 0
+	for ; rows.Next(); scannedRows++ {
+		rowData := &models.DoctorInfo{}
+		if err := rows.Scan(&rowData.ID, &rowData.Name, &rowData.Email, &rowData.Phone, &rowData.About, &rowData.ProfilePictureID, &rowData.RegistrationID); err != nil {
+			logger.Printf("[Scan Error]:%v", err)
+			return err
+		}
+	}
+	switch scannedRows {
+	case 0:
+		resp.dataError = newQueryError("no doctor found with given email-id")
+	case 1:
+	default:
+		resp.dataError = errors.New("internal db error: multiple doctors with same email id")
+	}
+	return nil
+}
+
+func DoctorLoginAPI(_req doctor.GetDoctorLoginParams) middleware.Responder {
+	req := &doctorLogin{GetDoctorLoginParams: _req}
+	return FetchAndRespond(req)
+}
+
+/** End of /doctor/login **/

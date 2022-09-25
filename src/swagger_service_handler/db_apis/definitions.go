@@ -25,7 +25,7 @@ var (
 	logger = log.Default()
 )
 
-//DB constants
+// DB constants
 const (
 	//General update query
 	generalInsertQuery = "INSERT INTO %v (%v) VALUES " //...followed by values in ()
@@ -34,10 +34,12 @@ const (
 	generalFetchQuery  = "SELECT %v FROM %v LIMIT %v, %v" //In case of conditions extend 2 position parameter
 
 	//Table names
-	//columns: name, email, phone, about, profile_picture
+	//columns: name, email, phone, about, profile_picture, registration_number, password
 	//Constraint: Unique email
 	doctorTbl = "doctors"
-	//columns: name, email, phone, profile_picture
+	//columns:id,name,email,registration_number,approved,comments,reviewer_comments
+	doctorRegistrationApplicationTbl = "doctor_admission_applications"
+	//columns: name, email, phone, profile_picture, password, profile_picture, about
 	patientTbl = "patients"
 	//columns: date, requested_start_time, requested_end_time, start_time,
 	//end_time, doctor_id, patient_id, prescription_id,patient_health_info_id
@@ -47,8 +49,8 @@ const (
 	patienHealthInfoTbl = "patient_health_info"
 )
 
-//General Entities
-//Columns: name, description
+// General Entities
+// Columns: name, description
 var (
 	medicineTbl = "medicines"
 	testTbl     = "med_tests"
@@ -59,8 +61,8 @@ const (
 	logIDFlag = "|API-HANDLER|"
 )
 
-//Struct to work with github.com/go-sql-driver/mysql sql function
-//attributes should be used together
+// Struct to work with github.com/go-sql-driver/mysql sql function
+// attributes should be used together
 type sqlExeParams struct {
 	Query     string //MySQL query with positional parameters
 	QueryArgs []any  //Value of positional parameters

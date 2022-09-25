@@ -94,6 +94,31 @@ remove:
         description: Error response
         schema:
           $ref: './definitions.yml#/error'
+login:
+  get:
+    tags: 
+      - patient
+      - login
+      - auth
+    description: Login API
+    parameters:
+      - name: email
+        type: string
+        required: true
+        in: query
+      - name: password
+        type: string
+        required: true
+        in: query
+    responses:
+      200:
+        description: details of logged in patient
+        schema:
+          $ref: '#/definitions/patient_info'
+      default:
+        description: Error reqsponse
+        schema:
+          $ref: './definitions.yml#/error'
 
 definitions:
   patient_info:
@@ -111,3 +136,6 @@ definitions:
       profile_picture_id:
         type: integer
         description: system id for profile picture
+      about:
+        type: string
+        description: Info on patient, as given by themselves

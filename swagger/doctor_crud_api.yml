@@ -5,6 +5,7 @@ doctor:
       tags:
         - doctor
         - register
+      description: Creates a doctor. Only for admins.
       parameters:
         - name: info
           in: body
@@ -12,7 +13,6 @@ doctor:
             required:
               - name
               - email
-              - phone
               - registration_id
             $ref: '#/doctor_definitions/doctor_info'
       responses:
@@ -93,6 +93,91 @@ doctor:
         200:
         default:
           description: Error response
+          schema:
+            $ref: './definitions.yml#/error'
+  review_registration_application:
+    post:
+      tags:
+        - doctor
+        - for_admin
+      description: Endpoint to approve or deny doctors registration application.
+      parameters:
+        - name: review
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - application_id
+              - approve
+            properties:
+              application_id:
+                description: Registration application id
+                type: integer
+              approve:
+                type: boolean
+              reviewer_comments:
+                type: string
+                description: reason for decision taken
+      responses:
+        200:
+          description: Success
+        default:
+          description: Error reqsponse
+          schema:
+            $ref: './definitions.yml#/error'
+  registration_application:
+    post:
+      tags:
+        - doctor
+        - register
+      description: This endpoint raises request for doctor registration which is to be approved or denied by reviewer later.
+      parameters:
+        - name: application
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              doctor_info:
+                required:
+                  - name
+                  - email
+                  - registration_id
+                $ref: './doctor_crud_api.yml#/doctor_definitions/doctor_info'
+              additional_info:
+                type: string
+                description: Additional info regarding application, applicant etc
+      responses:
+        200:
+          description: Succcess   
+        default:
+          description: Error Response
+          schema:
+            $ref: './definitions.yml#/error'
+  login:
+    get:
+      tags: 
+        - doctor
+        - login
+        - auth
+      description: Login API
+      parameters:
+        - name: email
+          type: string
+          required: true
+          in: query
+        - name: password
+          type: string
+          required: true
+          in: query
+      responses:
+        200:
+          description: details of logged in doc
+          schema:
+            $ref: '#/doctor_definitions/doctor_info'
+        default:
+          description: Error reqsponse
           schema:
             $ref: './definitions.yml#/error'
 

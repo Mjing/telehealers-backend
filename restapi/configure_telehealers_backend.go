@@ -92,6 +92,18 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 		func(gdfp doctor.GetDoctorFindParams, p *models.Principal) middleware.Responder {
 			return dbApis.FindDoctor(gdfp)
 		})
+	api.DoctorPostDoctorRegisterApplyHandler = doctor.PostDoctorRegisterApplyHandlerFunc(
+		func(pdrap doctor.PostDoctorRegisterApplyParams, p *models.Principal) middleware.Responder {
+			return dbApis.DoctorRegistrationApplicationAPI(pdrap)
+		})
+	api.DoctorPostDoctorRegisterReviewHandler = doctor.PostDoctorRegisterReviewHandlerFunc(
+		func(pdrrp doctor.PostDoctorRegisterReviewParams, p *models.Principal) middleware.Responder {
+			return dbApis.DoctorRegistrationApplicationReviewAPI(pdrrp)
+		})
+	api.DoctorGetDoctorLoginHandler = doctor.GetDoctorLoginHandlerFunc(
+		func(gdlp doctor.GetDoctorLoginParams, p *models.Principal) middleware.Responder {
+			return dbApis.DoctorLoginAPI(gdlp)
+		})
 	/** Patient CRUD APIs **/
 	api.PatientPutPatientRegisterHandler = patient.PutPatientRegisterHandlerFunc(
 		func(pprp patient.PutPatientRegisterParams, p *models.Principal) middleware.Responder {
@@ -108,6 +120,10 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 	api.PatientDeletePatientRemoveHandler = patient.DeletePatientRemoveHandlerFunc(
 		func(dprp patient.DeletePatientRemoveParams, p *models.Principal) middleware.Responder {
 			return dbApis.RemovePatient(dprp)
+		})
+	api.PatientGetPatientLoginHandler = patient.GetPatientLoginHandlerFunc(
+		func(gplp patient.GetPatientLoginParams, p *models.Principal) middleware.Responder {
+			return dbApis.PatientLoginAPI(gplp)
 		})
 	/** Patient Health INfo APIs **/
 	api.PatientHealthInfoPutPatientHealthInfoAddHandler = patient_health_info.PutPatientHealthInfoAddHandlerFunc(

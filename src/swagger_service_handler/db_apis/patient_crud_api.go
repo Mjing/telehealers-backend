@@ -1,6 +1,8 @@
 package apis
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/go-openapi/runtime/middleware"
@@ -35,9 +37,11 @@ func makeInsertPatQuery(patient *models.PatientInfo) (query string, queryArgs []
 	return
 }
 
-/** Main function to register patient into the system.
+/*
+* Main function to register patient into the system.
 TODO: Create register process: Apply->Verify->Approve
-**/
+*
+*/
 func RegisterPatient(param patient.PutPatientRegisterParams) middleware.Responder {
 	query, queryArgs, queryErr := makeInsertPatQuery(param.Info)
 	if queryErr != nil {
@@ -54,8 +58,10 @@ func RegisterPatient(param patient.PutPatientRegisterParams) middleware.Responde
 	return patient.NewPutPatientRegisterOK()
 }
 
-/** Function to create patient update query.
-query,queryArgs are to be used together in exec-function **/
+/*
+* Function to create patient update query.
+query,queryArgs are to be used together in exec-function *
+*/
 func makeUpdatePatQuery(pat *models.PatientInfo) (query string, queryArgs []any, err error) {
 	var set, cond string
 	if pat.ID == 0 {
@@ -168,3 +174,59 @@ func FindPatient(param patient.GetPatientFindParams) middleware.Responder {
 	logger.Printf("[Success]find game api")
 	return patient.NewGetPatientFindOK().WithPayload(fountPats)
 }
+
+/** /patient/login **/
+type patientLogin struct {
+	patient.GetPatientLoginParams
+	info      patient.GetPatientLoginOK
+	dataError error
+}
+
+func (*patientLogin) errResponse(httpStatusCode int, err error) middleware.Responder {
+	return patient.NewGetPatientLoginDefault(httpStatusCode).WithPayload(models.Error(err.Error()))
+}
+
+func (data *patientLogin) okResponse(int64, int64) middleware.Responder {
+	if data.dataError != nil {
+		logger.Printf("[Query Error] Query or DB error:%v", data.dataError)
+		return patient.NewGetPatientLoginDefault(400).WithPayload(models.Error(data.dataError.Error()))
+	}
+	return patient.NewGetPatientLoginOK().WithPayload(data.info.Payload)
+}
+
+func (req *patientLogin) makeQuery() (sqlQuery sqlExeParams, err error) {
+	if req.Email == "" {
+		err = newQueryError("email required")
+		return
+	}
+	sqlQuery.Query = "SELECT id, name, email, phone, about, profile_picture FROM " + patientTbl +
+		" WHERE email = ? AND password = ?"
+	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Email, req.Password)
+	return
+}
+
+func (resp *patientLogin) scanRows(rows *sql.Rows) error {
+	scannedRows := 0
+	for ; rows.Next(); scannedRows++ {
+		rowData := &models.PatientInfo{}
+		if err := rows.Scan(&rowData.ID, &rowData.Name, &rowData.Email, &rowData.Phone, &rowData.About, &rowData.ProfilePictureID); err != nil {
+			logger.Printf("[Scan Error]:%v", err)
+			return err
+		}
+	}
+	switch scannedRows {
+	case 0:
+		resp.dataError = newQueryError("no doctor found with given email-id")
+	case 1:
+	default:
+		resp.dataError = errors.New("internal db error: multiple doctors with same email id")
+	}
+	return nil
+}
+
+func PatientLoginAPI(_req patient.GetPatientLoginParams) middleware.Responder {
+	req := &patientLogin{GetPatientLoginParams: _req}
+	return FetchAndRespond(req)
+}
+
+/** End of /doctor/login **/
