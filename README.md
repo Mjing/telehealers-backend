@@ -1,13 +1,35 @@
-# Stack
-## Arango install
-docker run -p 8529:8529 -d -v /tmp/arangodb:$ARANGODB_STORAGE_DIR -e ARANGO_ROOT_PASSWORD=openSesame arangodb/arangodb:3.9.0
-# Database
-User credentials
-Patients {firstName, lastName, gender, height, weight}
-Doctors {......}
+# Telehealers Backend
 
-# Environment Variable
-sample:
+## Current Features
+1. Image API
+2. LiveKit Access token API
+3. [Current] Auth service
+
+# Hosting Server
+
+# Setting up Development environment
+
+## Local DB Container Setup
 ```sh
-export ARANGODB_STORAGE_DIR='/mnt/d/ub_sw/database/arangodb/telehealers_temp/'
+$sudo docker-compose --env-file dev.env -f scripts/db_setup_scripts/db-compose.yml  up
+```
+*Might need sudo
+
+
+# Environment Setup
+
 ```sh
+export LIVEKIT_API_KEY='****'
+export LIVEKIT_API_SECRET='****'
+export DB_PORT=3306
+export DB_DATABASENAME=telehealers
+export DB_USER=""
+export DB_PASS=""
+export DB_ADDRESS="localhost:3306"
+# Env variables only needed for development
+export DB_DATA_DIR=./data_dir #Directory where sql container will save its data
+
+```
+
+
+
