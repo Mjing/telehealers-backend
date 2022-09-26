@@ -144,6 +144,7 @@ doctor:
                   - name
                   - email
                   - registration_id
+                  - password
                 $ref: './doctor_crud_api.yml#/doctor_definitions/doctor_info'
               additional_info:
                 type: string
@@ -151,6 +152,59 @@ doctor:
       responses:
         200:
           description: Succcess   
+        default:
+          description: Error Response
+          schema:
+            $ref: './definitions.yml#/error'
+  view_pending_registration_application:
+    get:
+      tags:
+        - doctor
+        - register
+        - for_admin
+      description: API to view pending applications
+      parameters:
+        - name: name_like
+          type: string
+          in: query
+          description: Search for names similar to the param (case insensitive)
+        - name: applied_after
+          type: string
+          in: query
+          description: 'Get application applied after this param.Date-time string in format YYYY-MM-DD hh:mm:ss'
+        - name: applied_before
+          type: string
+          in: query
+          description: 'Get application applied before this param.Date-time string in format YYYY-MM-DD hh:mm:ss'
+        - name: page_size
+          type: integer
+          default: 10
+          in: query
+          required: true
+          description: Pagination arguments. Empty page or page-size < page_size implies end of returned data.
+        - name: page
+          type: integer
+          default: 1
+          in: query
+          required: true
+          description: Pagination arguments. Empty page or page-size < page_size implies end of returned data.
+        - name: sort
+          type: string
+          in: query
+          enum: [asc, desc]
+          default: asc
+          required: true
+          description: sort order, result is sorted by applied_on time of application.
+      responses:
+        200:
+          description: List of matched doctor applications
+          schema:
+            type: object
+            properties:
+              applications:
+                type: array
+                items:
+                  $ref: './doctor_crud_api.yml#/doctor_definitions/registration_application'
         default:
           description: Error Response
           schema:
@@ -201,4 +255,25 @@ doctor_definitions:
         description: system id for profile picture
       registration_id:
         description: 'Certification id, for practice license'
+        type: string
+      password:
+        description: password for doctor. only present in requests never in response.
+        type: string
+  registration_application:
+    type: object
+    properties:
+      id:
+        type: integer
+        description: application id, to be used in review processes (don't use as doctor's id)
+      name:
+        type: string
+      email:
+        type: string
+      comments:
+        type: string
+      reviewer_comments:
+        type: string
+      applied_on:
+        type: string
+      registration_number:
         type: string

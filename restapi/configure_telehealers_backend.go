@@ -104,6 +104,10 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 		func(gdlp doctor.GetDoctorLoginParams, p *models.Principal) middleware.Responder {
 			return dbApis.DoctorLoginAPI(gdlp)
 		})
+	api.DoctorGetDoctorRegisterPendingApplicationsHandler = doctor.GetDoctorRegisterPendingApplicationsHandlerFunc(
+		func(gdrpap doctor.GetDoctorRegisterPendingApplicationsParams, p *models.Principal) middleware.Responder {
+			return dbApis.GetDoctorRegistrationApplicationAPI(gdrpap)
+		})
 	/** Patient CRUD APIs **/
 	api.PatientPutPatientRegisterHandler = patient.PutPatientRegisterHandlerFunc(
 		func(pprp patient.PutPatientRegisterParams, p *models.Principal) middleware.Responder {

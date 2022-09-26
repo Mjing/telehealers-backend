@@ -51,6 +51,8 @@ paths:
   ## Yet to be tested
   /doctor/register/apply:
     $ref: './doctor_crud_api.yml#/doctor/registration_application'
+  /doctor/register/pending_applications:
+    $ref: './doctor_crud_api.yml#/doctor/view_pending_registration_application'
   /doctor/register/review:
     $ref: './doctor_crud_api.yml#/doctor/review_registration_application'
   /doctor/login:

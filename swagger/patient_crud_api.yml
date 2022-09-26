@@ -12,11 +12,16 @@ register:
           required:
             - name
             - email
-            - phone
+            - password
           $ref: '#/definitions/patient_info'
     responses:
       200:
-        description: Succcess   
+        description: returns id of registered patient
+        schema:
+          type: object
+          properties:
+            registered_id:
+              type: integer
       default:
         description: Error Response
         schema:
@@ -139,3 +144,6 @@ definitions:
       about:
         type: string
         description: Info on patient, as given by themselves
+      password:
+        type: string
+        description: Used for login and registration, never returned from backend

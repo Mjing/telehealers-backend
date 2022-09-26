@@ -10,13 +10,15 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-/**
+/*
+*
 Function to setup DB connection variables at start
 dbNameV: Name of SQL database
 dbUserV: SQL username
 dbPassV: Password for SQL username
 dbAddrV: Server address in host:ip format e.g. localhost:3306
-**/
+*
+*/
 func SetConnectionVars(dbNameV, dbUserV, dbPassV, dbAddrV string) {
 	dbName = dbNameV
 	dbUser = dbUserV
@@ -24,8 +26,10 @@ func SetConnectionVars(dbNameV, dbUserV, dbPassV, dbAddrV string) {
 	dbAddr = dbAddrV
 }
 
-/** To be called at the start of the application,
-for setup and initialization of the package**/
+/*
+* To be called at the start of the application,
+for setup and initialization of the package*
+*/
 func InitConnection() (err error) {
 	if pool == nil {
 		pool, err = sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v)/%v",
@@ -77,17 +81,19 @@ func FetchAndRespond(data ReadAPIs) middleware.Responder {
 	defer cancel()
 	foundRows, fetchErr := ExecDataFetchQuery(ctx, queryParams.Query, queryParams.QueryArgs...)
 	if fetchErr != nil {
-		logger.Printf("Query[Fetch Error]query:%v|error:%v", fetchErr, queryParams.Query)
+		logger.Printf("Query[Fetch Error]error:%v|query:%v", fetchErr, queryParams.Query)
 		return data.errResponse(500, errors.New("internal db read error"))
 	}
 	data.scanRows(foundRows)
 	return data.okResponse(0, 0)
 }
 
-/** Execute Insert queries.
+/*
+* Execute Insert queries.
 returns lastId inserted, rows affected, error
 Data update here implies: Creation, Updation and Deletion
-**/
+*
+*/
 func ExecDataUpdateQuery(query string, queryParams ...any) (int64, int64, error) {
 	ctx, cancel := getTimeOutContext()
 	defer cancel()
@@ -129,12 +135,14 @@ func updateQueryListString(base *string, columnName, joinString string) {
 	*base += columnName + " = ?"
 }
 
-/*** Append base string with operation with joinString as conjunction.
+/*
+** Append base string with operation with joinString as conjunction.
 Some simple usage
 ("", "col", ",") == "col"
 ("col1 = ?", "col2 = ?", ",") == "col1 = ?, col2 = ?"
 ("col1 > 2", "col1 < 20", "AND") == "col1 > 2 AND col1 < 20"
-***/
+**
+*/
 func updateQueryListStringWithOperation(base *string, operation, joinString string) {
 	if (*base != "") && (operation != "") {
 		*base += " " + joinString + " "

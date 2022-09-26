@@ -73,19 +73,24 @@ type doctorRegistrationApplication struct {
 }
 
 func (req *doctorRegistrationApplication) makeQuery() (sqlQuery sqlExeParams, err error) {
-	if req.Application.DoctorInfo.RegistrationID == "" || req.Application.DoctorInfo.Name == "" || req.Application.DoctorInfo.Email == "" {
-		err = newQueryError("registration_id, name and email can't be empty")
+	if req.Application.DoctorInfo.RegistrationID == "" || req.Application.DoctorInfo.Name == "" || req.Application.DoctorInfo.Email == "" ||
+		req.Application.DoctorInfo.Password == "" {
+		err = newQueryError("registration_id, name, email and password can't be empty")
 		return
 	}
-	columns := "registration_id, name, email, applied_on"
-	values := "?,?,?, NOW()"
-	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Application.DoctorInfo.RegistrationID, req.Application.DoctorInfo.Name, req.Application.DoctorInfo.Email)
+	columns := "registration_number, name, email, password, applied_on"
+	values := "?,?,?,?,NOW()"
+	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Application.DoctorInfo.RegistrationID,
+		req.Application.DoctorInfo.Name, req.Application.DoctorInfo.Email, req.Application.DoctorInfo.Password)
 	if req.Application.AdditionalInfo != "" {
 		columns += ",comments"
 		values += ",?"
 		sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Application.AdditionalInfo)
 	}
-	sqlQuery.Query = "INSERT INTO " + doctorRegistrationApplicationTbl + fmt.Sprintf(" (%v) VALUES (%v)", columns, values)
+	sqlQuery.Query = "INSERT INTO " + doctorRegistrationApplicationTbl + fmt.Sprintf(" (%v) VALUES (%v)", columns, values) +
+		" ON DUPLICATE KEY UPDATE applied_on = NOW(), name = ?, email = ?, password = ?"
+	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs,
+		req.Application.DoctorInfo.Name, req.Application.DoctorInfo.Email, req.Application.DoctorInfo.Password)
 	return
 }
 
@@ -117,7 +122,7 @@ func (*doctorRegistrationReview) okResponse(int64, int64) middleware.Responder {
 
 func (req *doctorRegistrationReview) makeApproveQuery() (sqlQuery sqlExeParams, err error) {
 	/** inv: req is well formed **/
-	sqlQuery.Query = "INSERT INTO " + doctorTbl + " (name, email, registration_number) SELECT name, email, registration_number FROM " +
+	sqlQuery.Query = "INSERT INTO " + doctorTbl + " (name, email, registration_number, password) SELECT name, email, registration_number, password FROM " +
 		doctorRegistrationApplicationTbl + " WHERE id = ?"
 	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Review.ApplicationID)
 	return
@@ -291,7 +296,7 @@ func (data *doctorLogin) okResponse(int64, int64) middleware.Responder {
 		logger.Printf("[Query Error] Query or DB error:%v", data.dataError)
 		return doctor.NewGetDoctorLoginDefault(400).WithPayload(models.Error(data.dataError.Error()))
 	}
-	return doctor.NewGetDoctorLoginOK().WithPayload(data.info.Payload)
+	return &data.info
 }
 
 func (req *doctorLogin) makeQuery() (sqlQuery sqlExeParams, err error) {
@@ -313,6 +318,7 @@ func (resp *doctorLogin) scanRows(rows *sql.Rows) error {
 			logger.Printf("[Scan Error]:%v", err)
 			return err
 		}
+		resp.info.WithPayload(rowData)
 	}
 	switch scannedRows {
 	case 0:
@@ -330,3 +336,57 @@ func DoctorLoginAPI(_req doctor.GetDoctorLoginParams) middleware.Responder {
 }
 
 /** End of /doctor/login **/
+
+/** /doctor/register/pending_applications **/
+type getPendingDocApp struct {
+	doctor.GetDoctorRegisterPendingApplicationsParams
+	data doctor.GetDoctorRegisterPendingApplicationsOKBody
+}
+
+func (*getPendingDocApp) errResponse(httpStatusCode int, err error) middleware.Responder {
+	return doctor.NewGetDoctorRegisterPendingApplicationsDefault(httpStatusCode).WithPayload(models.Error(err.Error()))
+}
+
+func (data *getPendingDocApp) okResponse(int64, int64) middleware.Responder {
+	return doctor.NewGetDoctorRegisterPendingApplicationsOK().WithPayload(&data.data)
+}
+
+func (req *getPendingDocApp) makeQuery() (sqlQuery sqlExeParams, err error) {
+	filter := " WHERE approved = FALSE"
+	if req.AppliedAfter != nil {
+		updateQueryListStringWithOperation(&filter, "applied_on >= ?", " AND ")
+		sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, *req.AppliedAfter)
+	}
+	if req.AppliedBefore != nil {
+		updateQueryListStringWithOperation(&filter, "applied_on <= ?", " AND ")
+		sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, *req.AppliedBefore)
+	}
+	if req.NameLike != nil {
+		updateQueryListStringWithOperation(&filter, "name LIKE CONCAT('%', CONCAT(?, '%'))", " AND ")
+		sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, *req.NameLike)
+	}
+	sqlQuery.Query = "SELECT id, name, email, registration_number, applied_on, comments, reviewer_comments FROM " + doctorRegistrationApplicationTbl + filter +
+		" ORDER BY applied_on " + req.Sort + " LIMIT ?, ?"
+	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.PageSize*(req.Page-1), req.PageSize)
+	return
+}
+
+func (resp *getPendingDocApp) scanRows(rows *sql.Rows) (err error) {
+	for rows.Next() {
+		rowData := &models.RegistrationApplication{}
+		if err = rows.Scan(&rowData.ID, &rowData.Name, &rowData.Email, &rowData.RegistrationNumber,
+			&rowData.AppliedOn, &rowData.Comments, &rowData.ReviewerComments); err != nil {
+			logger.Printf("[Scan Error]In /doctor/register/pending_application:%v", err)
+			return
+		}
+		resp.data.Applications = append(resp.data.Applications, rowData)
+	}
+	return
+}
+
+func GetDoctorRegistrationApplicationAPI(_req doctor.GetDoctorRegisterPendingApplicationsParams) middleware.Responder {
+	req := &getPendingDocApp{GetDoctorRegisterPendingApplicationsParams: _req}
+	return FetchAndRespond(req)
+}
+
+/** End of /doctor/register/pending_applications **/

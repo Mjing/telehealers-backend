@@ -19,15 +19,21 @@ var (
 )
 
 func makeInsertPatQuery(patient *models.PatientInfo) (query string, queryArgs []any, err error) {
-	if patient.Name == "" || patient.Email == "" || patient.Phone == "" {
-		err = newQueryError("patient name, email or phone can't be empty")
+	logger.Printf("xxxxxxxx %v", *patient)
+	if patient.Name == "" || patient.Email == "" || patient.Password == "" {
+		err = newQueryError("patient name, email and password can't be empty")
 		return
 	}
-	columns := "name,email,phone"
+	columns := "name,email,password"
 	values := "?,?,?"
 	queryArgs = append(queryArgs, patient.Name)
 	queryArgs = append(queryArgs, patient.Email)
-	queryArgs = append(queryArgs, patient.Phone)
+	queryArgs = append(queryArgs, patient.Password)
+	if patient.Phone != "" {
+		columns += ",phone"
+		values += ",?"
+		queryArgs = append(queryArgs, patient.Phone)
+	}
 	if patient.ProfilePictureID != 0 {
 		columns += ",profile_picture"
 		values += ",?"
@@ -39,7 +45,7 @@ func makeInsertPatQuery(patient *models.PatientInfo) (query string, queryArgs []
 
 /*
 * Main function to register patient into the system.
-TODO: Create register process: Apply->Verify->Approve
+TODO: Test it
 *
 */
 func RegisterPatient(param patient.PutPatientRegisterParams) middleware.Responder {
@@ -48,14 +54,16 @@ func RegisterPatient(param patient.PutPatientRegisterParams) middleware.Responde
 		logger.Printf("[Error]bad input:%v", queryErr.Error())
 		return patient.NewPutPatientRegisterDefault(400).WithPayload(models.Error(queryErr.Error()))
 	}
-	if _, _, execErr := ExecDataUpdateQuery(query, queryArgs...); execErr != nil {
+	if lastID, _, execErr := ExecDataUpdateQuery(query, queryArgs...); execErr != nil {
 		logger.Printf("[Error]patient register db functionality:%v", execErr)
 		if duplicateEntryError(execErr) {
 			return patient.NewPutPatientRegisterDefault(400).WithPayload("Requested patient already present")
 		}
 		return patient.NewPutPatientRegisterDefault(500).WithPayload("Internal error")
+	} else {
+		resp := &patient.PutPatientRegisterOKBody{RegisteredID: lastID}
+		return patient.NewPutPatientRegisterOK().WithPayload(resp)
 	}
-	return patient.NewPutPatientRegisterOK()
 }
 
 /*
@@ -191,7 +199,7 @@ func (data *patientLogin) okResponse(int64, int64) middleware.Responder {
 		logger.Printf("[Query Error] Query or DB error:%v", data.dataError)
 		return patient.NewGetPatientLoginDefault(400).WithPayload(models.Error(data.dataError.Error()))
 	}
-	return patient.NewGetPatientLoginOK().WithPayload(data.info.Payload)
+	return &data.info
 }
 
 func (req *patientLogin) makeQuery() (sqlQuery sqlExeParams, err error) {
@@ -199,7 +207,7 @@ func (req *patientLogin) makeQuery() (sqlQuery sqlExeParams, err error) {
 		err = newQueryError("email required")
 		return
 	}
-	sqlQuery.Query = "SELECT id, name, email, phone, about, profile_picture FROM " + patientTbl +
+	sqlQuery.Query = "SELECT id, name, email, IFNULL(phone, ''), IFNULL(about, ''), IFNULL(profile_picture, 0) FROM " + patientTbl +
 		" WHERE email = ? AND password = ?"
 	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Email, req.Password)
 	return
@@ -213,6 +221,7 @@ func (resp *patientLogin) scanRows(rows *sql.Rows) error {
 			logger.Printf("[Scan Error]:%v", err)
 			return err
 		}
+		resp.info.WithPayload(rowData)
 	}
 	switch scannedRows {
 	case 0:
