@@ -41,22 +41,22 @@ paths:
             $ref: './definitions.yml#/error'
   # Doctor CRUD APIs
   /doctor/register:
-    $ref: './doctor_crud_api.yml#/doctor/register'
+    $ref: './doctor_crud_api.yml#/register'
   /doctor/update:
-    $ref: './doctor_crud_api.yml#/doctor/update'
+    $ref: './doctor_crud_api.yml#/update'
   /doctor/remove:
-    $ref: './doctor_crud_api.yml#/doctor/remove'
+    $ref: './doctor_crud_api.yml#/remove'
   /doctor/find:
-    $ref: './doctor_crud_api.yml#/doctor/find'
+    $ref: './doctor_crud_api.yml#/find'
   ## Yet to be tested
   /doctor/register/apply:
-    $ref: './doctor_crud_api.yml#/doctor/registration_application'
+    $ref: './doctor_crud_api.yml#/registration_application'
   /doctor/register/pending_applications:
-    $ref: './doctor_crud_api.yml#/doctor/view_pending_registration_application'
+    $ref: './doctor_crud_api.yml#/view_pending_registration_application'
   /doctor/register/review:
-    $ref: './doctor_crud_api.yml#/doctor/review_registration_application'
+    $ref: './doctor_crud_api.yml#/review_registration_application'
   /doctor/login:
-    $ref: './doctor_crud_api.yml#/doctor/login'
+    $ref: './doctor_crud_api.yml#/login'
   # Patient CRUD APIs
   /patient/register:
     $ref: './patient_crud_api.yml#/register'
@@ -82,6 +82,8 @@ paths:
     $ref: './appointment_crud_api.yml#/remove'
   /appointment/find:
     $ref: './appointment_crud_api.yml#/find'
+  /appointment/count:
+    $ref: './appointment_crud_api.yml#/count'
   # Medicine CRUD APIs
   /medicine/register:
     $ref: './entity_crud_api.yml#/register'

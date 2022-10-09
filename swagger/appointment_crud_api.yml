@@ -78,6 +78,10 @@ find:
       - name: doctor_id
         in: query
         type: integer
+      - name: only_pending 
+        in: query
+        type: boolean
+        description: Return only-pending appointments
       - name: page
         in: query
         type: integer
@@ -98,6 +102,40 @@ find:
               type: array
               items:
                 $ref: './appointment_crud_api.yml#/definitions/appointment_info'
+      default:
+        description: Error response
+        schema:
+          $ref: './definitions.yml#/error'
+count:
+  get:
+    tags:
+      - appointment
+      - find
+      - count
+    description: Fetch appointments from latest to last
+    parameters:
+      - name: on_date
+        description: Find appointments on date (format yyyy-mm-dd)
+        in: query
+        type: string
+        required: true
+      - name: patient_id
+        in: query
+        type: integer
+      - name: doctor_id
+        in: query
+        type: integer
+      - name: only_pending 
+        in: query
+        type: boolean
+    responses:
+      200:
+        description: List of matched appointments
+        schema:
+          type: object
+          properties:
+            count:
+              type: integer
       default:
         description: Error response
         schema:

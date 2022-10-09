@@ -1,239 +1,238 @@
 # Doctor CRUD APIs
-doctor:
-  register:
-    put:
-      tags:
-        - doctor
-        - register
-      description: Creates a doctor. Only for admins.
-      parameters:
-        - name: info
-          in: body
-          schema:
-            required:
-              - name
-              - email
-              - registration_id
-            $ref: '#/doctor_definitions/doctor_info'
-      responses:
-        200:
-          description: Succcess   
-        default:
-          description: Error Response
-          schema:
-            $ref: './definitions.yml#/error'
-  update:
-    post:
-      tags:
-        - doctor
-        - update
-      parameters:
-        - name: info
-          in: body
-          schema:
-            required:
-              - id
-            $ref: '#/doctor_definitions/doctor_info'
-      responses:
-        200:
-          description: Update successful
-        default:
-          description: Error
-          schema:
-            $ref: './definitions.yml#/error'
-  find:
-    get:
-      tags:
-        - doctor
-        - read
-      parameters:
-        - name: id
-          in: query
-          type: integer
-          description: System id number
-        - name: name_containing
-          in: query
-          type: string
-          description: find doctors with name containing this string
-        - name: page
-          in: query
-          type: integer
-          description: pagination parameter, must be greater than 1
-          default: 1
-        - name: size
-          in: query
-          type: integer
-          description: page size
-          default: 10
-      responses:
-        200:
-          description: List of matched doctors
-          schema:
-            type: object
-            properties:
-              doctors:
-                type: array
-                items:
-                  $ref: './doctor_crud_api.yml#/doctor_definitions/doctor_info'
-        default:
-          description: Error response
-          schema:
-            $ref: './definitions.yml#/error'
-  remove:
-    delete:
-      tags:
-        - doctor
-        - delete
-      parameters:
-        - name: id
-          in: query
-          required: true
-          type: integer
-      responses:
-        200:
-        default:
-          description: Error response
-          schema:
-            $ref: './definitions.yml#/error'
-  review_registration_application:
-    post:
-      tags:
-        - doctor
-        - for_admin
-      description: Endpoint to approve or deny doctors registration application.
-      parameters:
-        - name: review
-          in: body
-          required: true
-          schema:
-            type: object
-            required:
-              - application_id
-              - approve
-            properties:
-              application_id:
-                description: Registration application id
-                type: integer
-              approve:
-                type: boolean
-              reviewer_comments:
-                type: string
-                description: reason for decision taken
-      responses:
-        200:
-          description: Success
-        default:
-          description: Error reqsponse
-          schema:
-            $ref: './definitions.yml#/error'
-  registration_application:
-    post:
-      tags:
-        - doctor
-        - register
-      description: This endpoint raises request for doctor registration which is to be approved or denied by reviewer later.
-      parameters:
-        - name: application
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              doctor_info:
-                required:
-                  - name
-                  - email
-                  - registration_id
-                  - password
+register:
+  put:
+    tags:
+      - doctor
+      - register
+    description: Creates a doctor. Only for admins.
+    parameters:
+      - name: info
+        in: body
+        schema:
+          required:
+            - name
+            - email
+            - registration_id
+          $ref: '#/doctor_definitions/doctor_info'
+    responses:
+      200:
+        description: Succcess   
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+update:
+  post:
+    tags:
+      - doctor
+      - update
+    parameters:
+      - name: info
+        in: body
+        schema:
+          required:
+            - id
+          $ref: '#/doctor_definitions/doctor_info'
+    responses:
+      200:
+        description: Update successful
+      default:
+        description: Error
+        schema:
+          $ref: './definitions.yml#/error'
+find:
+  get:
+    tags:
+      - doctor
+      - read
+    parameters:
+      - name: id
+        in: query
+        type: integer
+        description: System id number
+      - name: name_containing
+        in: query
+        type: string
+        description: find doctors with name containing this string
+      - name: page
+        in: query
+        type: integer
+        description: pagination parameter, must be greater than 1
+        default: 1
+      - name: size
+        in: query
+        type: integer
+        description: page size
+        default: 10
+    responses:
+      200:
+        description: List of matched doctors
+        schema:
+          type: object
+          properties:
+            doctors:
+              type: array
+              items:
                 $ref: './doctor_crud_api.yml#/doctor_definitions/doctor_info'
-              additional_info:
-                type: string
-                description: Additional info regarding application, applicant etc
-      responses:
-        200:
-          description: Succcess   
-        default:
-          description: Error Response
-          schema:
-            $ref: './definitions.yml#/error'
-  view_pending_registration_application:
-    get:
-      tags:
-        - doctor
-        - register
-        - for_admin
-      description: API to view pending applications
-      parameters:
-        - name: name_like
-          type: string
-          in: query
-          description: Search for names similar to the param (case insensitive)
-        - name: applied_after
-          type: string
-          in: query
-          description: 'Get application applied after this param.Date-time string in format YYYY-MM-DD hh:mm:ss'
-        - name: applied_before
-          type: string
-          in: query
-          description: 'Get application applied before this param.Date-time string in format YYYY-MM-DD hh:mm:ss'
-        - name: page_size
-          type: integer
-          default: 10
-          in: query
-          required: true
-          description: Pagination arguments. Empty page or page-size < page_size implies end of returned data.
-        - name: page
-          type: integer
-          default: 1
-          in: query
-          required: true
-          description: Pagination arguments. Empty page or page-size < page_size implies end of returned data.
-        - name: sort
-          type: string
-          in: query
-          enum: [asc, desc]
-          default: asc
-          required: true
-          description: sort order, result is sorted by applied_on time of application.
-      responses:
-        200:
-          description: List of matched doctor applications
-          schema:
-            type: object
-            properties:
-              applications:
-                type: array
-                items:
-                  $ref: './doctor_crud_api.yml#/doctor_definitions/registration_application'
-        default:
-          description: Error Response
-          schema:
-            $ref: './definitions.yml#/error'
-  login:
-    get:
-      tags: 
-        - doctor
-        - login
-        - auth
-      description: Login API
-      parameters:
-        - name: email
-          type: string
-          required: true
-          in: query
-        - name: password
-          type: string
-          required: true
-          in: query
-      responses:
-        200:
-          description: details of logged in doc
-          schema:
-            $ref: '#/doctor_definitions/doctor_info'
-        default:
-          description: Error reqsponse
-          schema:
-            $ref: './definitions.yml#/error'
+      default:
+        description: Error response
+        schema:
+          $ref: './definitions.yml#/error'
+remove:
+  delete:
+    tags:
+      - doctor
+      - delete
+    parameters:
+      - name: id
+        in: query
+        required: true
+        type: integer
+    responses:
+      200:
+      default:
+        description: Error response
+        schema:
+          $ref: './definitions.yml#/error'
+review_registration_application:
+  post:
+    tags:
+      - doctor
+      - for_admin
+    description: Endpoint to approve or deny doctors registration application.
+    parameters:
+      - name: review
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - application_id
+            - approve
+          properties:
+            application_id:
+              description: Registration application id
+              type: integer
+            approve:
+              type: boolean
+            reviewer_comments:
+              type: string
+              description: reason for decision taken
+    responses:
+      200:
+        description: Success
+      default:
+        description: Error reqsponse
+        schema:
+          $ref: './definitions.yml#/error'
+registration_application:
+  post:
+    tags:
+      - doctor
+      - register
+    description: This endpoint raises request for doctor registration which is to be approved or denied by reviewer later.
+    parameters:
+      - name: application
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            doctor_info:
+              required:
+                - name
+                - email
+                - registration_id
+                - password
+              $ref: './doctor_crud_api.yml#/doctor_definitions/doctor_info'
+            additional_info:
+              type: string
+              description: Additional info regarding application, applicant etc
+    responses:
+      200:
+        description: Succcess   
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+view_pending_registration_application:
+  get:
+    tags:
+      - doctor
+      - register
+      - for_admin
+    description: API to view pending applications
+    parameters:
+      - name: name_like
+        type: string
+        in: query
+        description: Search for names similar to the param (case insensitive)
+      - name: applied_after
+        type: string
+        in: query
+        description: 'Get application applied after this param.Date-time string in format YYYY-MM-DD hh:mm:ss'
+      - name: applied_before
+        type: string
+        in: query
+        description: 'Get application applied before this param.Date-time string in format YYYY-MM-DD hh:mm:ss'
+      - name: page_size
+        type: integer
+        default: 10
+        in: query
+        required: true
+        description: Pagination arguments. Empty page or page-size < page_size implies end of returned data.
+      - name: page
+        type: integer
+        default: 1
+        in: query
+        required: true
+        description: Pagination arguments. Empty page or page-size < page_size implies end of returned data.
+      - name: sort
+        type: string
+        in: query
+        enum: [asc, desc]
+        default: asc
+        required: true
+        description: sort order, result is sorted by applied_on time of application.
+    responses:
+      200:
+        description: List of matched doctor applications
+        schema:
+          type: object
+          properties:
+            applications:
+              type: array
+              items:
+                $ref: './doctor_crud_api.yml#/doctor_definitions/registration_application'
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+login:
+  get:
+    tags: 
+      - doctor
+      - login
+      - auth
+    description: Login API
+    parameters:
+      - name: email
+        type: string
+        required: true
+        in: query
+      - name: password
+        type: string
+        required: true
+        in: query
+    responses:
+      200:
+        description: details of logged in doc
+        schema:
+          $ref: '#/doctor_definitions/doctor_info'
+      default:
+        description: Error reqsponse
+        schema:
+          $ref: './definitions.yml#/error'
 
 doctor_definitions:
   doctor_info:

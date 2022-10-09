@@ -145,6 +145,13 @@ func (param *FindAppointment) makeQuery() (sqlReq sqlExeParams, err error) {
 		condition += " AND (patient_id = ?)"
 		sqlReq.QueryArgs = append(sqlReq.QueryArgs, *req.PatientID)
 	}
+	if req.OnlyPending == nil {
+		if *req.OnlyPending {
+			condition += " AND (prescription_id == NULL)"
+		} else {
+			condition += " AND (prescription_id != NULL)"
+		}
+	}
 	orderBy = " ORDER BY date, requested_start_time ASC"
 	sqlReq.Query = fmt.Sprintf(generalFetchQuery, aptFetchColumns, aptTbl+condition, req.Size*(req.Page-1), req.Size) + orderBy
 	return
@@ -180,5 +187,67 @@ func (param *FindAppointment) scanRows(rows *sql.Rows) error {
 func FindAppointmentAPI(param appointment.GetAppointmentFindParams,
 	p *models.Principal) middleware.Responder {
 	req := &FindAppointment{param: param}
+	return FetchAndRespond(req)
+}
+
+/** /appointment/count: Find appointment implementation **/
+type CountAppointment struct {
+	param       appointment.GetAppointmentCountParams
+	fetchedData *appointment.GetAppointmentCountOKBody
+}
+
+func (param *CountAppointment) makeQuery() (sqlReq sqlExeParams, err error) {
+	req := &param.param
+	if req.OnDate == "" {
+		err = newQueryError("invalid on_date value")
+		return
+	}
+	condition := " WHERE (on_date = ?)"
+	sqlReq.QueryArgs = append(sqlReq.QueryArgs, req.OnDate)
+	if req.DoctorID == nil && *req.DoctorID != 0 {
+		condition += " AND (doctor_id = ?)"
+		sqlReq.QueryArgs = append(sqlReq.QueryArgs, *req.DoctorID)
+	}
+	if req.PatientID == nil && *req.PatientID != 0 {
+		condition += " AND (patient_id = ?)"
+		sqlReq.QueryArgs = append(sqlReq.QueryArgs, *req.PatientID)
+	}
+	if req.OnlyPending == nil {
+		if *req.OnlyPending {
+			condition += " AND (prescription_id == NULL)"
+		} else {
+			condition += " AND (prescription_id != NULL)"
+		}
+	}
+	sqlReq.Query = "SELECT COUNT(*) FROM " + aptTbl + condition
+	return
+}
+
+func (param *CountAppointment) errResponse(httpCode int, err error) middleware.Responder {
+	logger.Printf("[Find-appointment API]Error:code:%v|error:%v", httpCode,
+		err)
+	return appointment.NewGetAppointmentCountDefault(httpCode).WithPayload(models.Error(err.Error()))
+}
+
+func (param *CountAppointment) okResponse(int64, int64) middleware.Responder {
+	logger.Printf("[Find-appointment API]Successful")
+	return appointment.NewGetAppointmentCountOK().WithPayload(param.fetchedData)
+}
+
+func (param *CountAppointment) scanRows(rows *sql.Rows) error {
+	data := &appointment.GetAppointmentCountOKBody{}
+	for rows.Next() {
+		if scanErr := rows.Scan(&data.Count); scanErr != nil {
+			logger.Printf("[Find appointment API]Scan error:%v", scanErr)
+			return scanErr
+		}
+	}
+	param.fetchedData = data
+	return nil
+}
+
+func CountAppointmentAPI(param appointment.GetAppointmentCountParams,
+	p *models.Principal) middleware.Responder {
+	req := &CountAppointment{param: param}
 	return FetchAndRespond(req)
 }
