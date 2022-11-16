@@ -226,9 +226,81 @@ login:
         in: query
     responses:
       200:
-        description: details of logged in doc
+        description: "details of logged in doc. password field of the doctor-object contains session-id, this is a case of semantics abuse"
         schema:
-          $ref: '#/doctor_definitions/doctor_info'
+          type: object
+          properties:
+            doctor:
+              $ref: './doctor_crud_api.yml#/doctor_definitions/doctor_info'
+            session_id:
+              type: string
+      default:
+        description: Error reqsponse
+        schema:
+          $ref: './definitions.yml#/error'
+online:
+  post:
+    tags:
+      - doctor
+    parameters:
+      - name: req
+        in: body
+        schema:
+          type: object
+          required:
+            - session_id
+            - doctor_id
+            - status
+          properties:
+            session_id:
+              type: string
+              description: session-id as returned from login API, must be hit periodically to keep user online
+            doctor_id:
+              type: integer
+            status:
+              type: string
+              description: visibility status ONLINE/OFFLINE, provided for extension purposes only
+              enum: [ONLINE, OFFLINE]
+              default: ONLINE
+    responses:
+      200:
+        description: "Doctor is online for next 2 minute atleast."
+      default:
+        description: Error reqsponse
+        schema:
+          $ref: './definitions.yml#/error'
+
+patients:
+  get:
+    tags:
+      - doctor
+      - patient
+    description: Fetch patient related to doctor
+    parameters:
+      - name: doctor_id
+        type: integer
+        required: true
+        in: query
+      - name: page
+        type: integer
+        default: 1
+        required: true
+        in: query
+      - name: page_size
+        type: integer
+        default: 10
+        required: true
+        in: query
+    responses:
+      200:
+        description: List of patients previously treated by the doctor
+        schema:
+          type: object
+          properties:
+            patients:
+              type: array
+              items:
+                $ref: './patient_crud_api.yml#/definitions/patient_info'
       default:
         description: Error reqsponse
         schema:

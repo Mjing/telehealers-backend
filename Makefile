@@ -1,5 +1,9 @@
-server.out: src/*/*.go src/*/*/*.go swagger.obj restapi/configure_telehealers_backend.go
+server.out: src/swagger_service_handler/profile_picture.go src/swagger_service_handler/conferrencing/*.go \
+	src/swagger_service_handler/db_apis/*.go swagger.obj restapi/configure_telehealers_backend.go
 	go build -o $@ cmd/telehealers-backend-server/main.go
+
+eda.out: src/swagger_service_handler/eda/*.go
+	go build -o $@ cmd/eda_server/eda_server.go
 
 swagger.obj: swagger/*.yml
 	swagger flatten swagger/swagger.yml --format=yaml > flattened_swagger.yml

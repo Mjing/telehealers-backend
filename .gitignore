@@ -10,4 +10,8 @@ restapi/operations
 restapi/doc.go
 restapi/server.go
 restapi/embedded_spec.go
-cmd
+cmd/*.go
+cmd/telehealers-backend-server
+cert
+run.sh
+test.go

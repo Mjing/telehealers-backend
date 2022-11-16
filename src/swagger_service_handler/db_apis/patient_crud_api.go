@@ -207,7 +207,7 @@ func (req *patientLogin) makeQuery() (sqlQuery sqlExeParams, err error) {
 		err = newQueryError("email required")
 		return
 	}
-	sqlQuery.Query = "SELECT id, name, email, IFNULL(phone, ''), IFNULL(about, ''), IFNULL(profile_picture, 0) FROM " + patientTbl +
+	sqlQuery.Query = "SELECT id, UUID() as session_id, name, email, IFNULL(phone, ''), IFNULL(about, ''), IFNULL(profile_picture, 0) FROM " + patientTbl +
 		" WHERE email = ? AND password = ?"
 	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Email, req.Password)
 	return
@@ -216,12 +216,14 @@ func (req *patientLogin) makeQuery() (sqlQuery sqlExeParams, err error) {
 func (resp *patientLogin) scanRows(rows *sql.Rows) error {
 	scannedRows := 0
 	for ; rows.Next(); scannedRows++ {
-		rowData := &models.PatientInfo{}
-		if err := rows.Scan(&rowData.ID, &rowData.Name, &rowData.Email, &rowData.Phone, &rowData.About, &rowData.ProfilePictureID); err != nil {
+		patientData := &models.PatientInfo{}
+		respBody := &patient.GetPatientLoginOKBody{}
+		if err := rows.Scan(&patientData.ID, &respBody.SessionID, &patientData.Name, &patientData.Email, &patientData.Phone, &patientData.About, &patientData.ProfilePictureID); err != nil {
 			logger.Printf("[Scan Error]:%v", err)
 			return err
 		}
-		resp.info.WithPayload(rowData)
+		respBody.Patient = patientData
+		resp.info.WithPayload(respBody)
 	}
 	switch scannedRows {
 	case 0:
@@ -229,6 +231,10 @@ func (resp *patientLogin) scanRows(rows *sql.Rows) error {
 	case 1:
 	default:
 		resp.dataError = errors.New("internal db error: multiple doctors with same email id")
+	}
+	if err := updateLoginSession(resp.info.Payload.Patient.ID, resp.info.Payload.SessionID, "OFFLINE", patientSessionTbl); err != nil {
+		logger.Printf("[Error] In doc login session-id updation:%v", err)
+		resp.dataError = errors.New("internal db error: In creating login data")
 	}
 	return nil
 }

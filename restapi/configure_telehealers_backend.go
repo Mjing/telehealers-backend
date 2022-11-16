@@ -108,6 +108,9 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 		func(gdrpap doctor.GetDoctorRegisterPendingApplicationsParams, p *models.Principal) middleware.Responder {
 			return dbApis.GetDoctorRegistrationApplicationAPI(gdrpap)
 		})
+	api.DoctorGetDoctorPatientsHandler = doctor.GetDoctorPatientsHandlerFunc(
+		dbApis.DoctorRelatedPatientsAPI)
+	api.DoctorPostDoctorOnlineHandler = doctor.PostDoctorOnlineHandlerFunc(dbApis.DoctorOnlineAPI)
 	/** Patient CRUD APIs **/
 	api.PatientPutPatientRegisterHandler = patient.PutPatientRegisterHandlerFunc(
 		func(pprp patient.PutPatientRegisterParams, p *models.Principal) middleware.Responder {
@@ -143,6 +146,8 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 		dbApis.RemoveAppointmentAPI)
 	api.AppointmentGetAppointmentFindHandler = appointment.GetAppointmentFindHandlerFunc(
 		dbApis.FindAppointmentAPI)
+	api.AppointmentGetAppointmentCountHandler = appointment.GetAppointmentCountHandlerFunc(
+		dbApis.CountAppointmentAPI)
 	/** Entities CRUDs: Medicine, Tests, Advices **/
 	//Register
 	api.RegisterPutMedicineRegisterHandler = register.PutMedicineRegisterHandlerFunc(dbApis.RegisterMedicineAPI)

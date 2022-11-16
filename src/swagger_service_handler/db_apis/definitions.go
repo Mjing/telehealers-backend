@@ -47,6 +47,10 @@ const (
 	aptFetchColumns = "id, doctor_id, patient_id, patient_health_info_id, prescription_id, date, start_time, end_time, requested_start_time, requested_end_time"
 	//columns:gender,height,weight,bp,health_complaints,patient_id,created_on
 	patienHealthInfoTbl = "patient_health_info"
+	//columns:doctor_id, session_id, last_login, status
+	docSessionTbl = "doctor_availibility_status"
+	//columns:patient_id, session_id, last_login, status
+	patientSessionTbl = "patient_availability_status"
 )
 
 // General Entities

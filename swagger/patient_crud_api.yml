@@ -119,7 +119,12 @@ login:
       200:
         description: details of logged in patient
         schema:
-          $ref: '#/definitions/patient_info'
+          type: object
+          properties:
+            patient:
+              $ref: './patient_crud_api.yml#/definitions/patient_info'
+            session_id:
+              type: string
       default:
         description: Error reqsponse
         schema:

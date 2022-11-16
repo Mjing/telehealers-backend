@@ -57,6 +57,10 @@ paths:
     $ref: './doctor_crud_api.yml#/review_registration_application'
   /doctor/login:
     $ref: './doctor_crud_api.yml#/login'
+  /doctor/patients:
+    $ref: './doctor_crud_api.yml#/patients'
+  /doctor/online:
+    $ref: './doctor_crud_api.yml#/online'
   # Patient CRUD APIs
   /patient/register:
     $ref: './patient_crud_api.yml#/register'

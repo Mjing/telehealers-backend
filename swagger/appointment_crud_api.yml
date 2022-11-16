@@ -9,17 +9,18 @@ register:
       - name: appointment
         in: body
         required: true
+        description: "Endpoint to create appointment register."
         schema:
           $ref: '#/definitions/appointment_info'
           required:
             - doctor_id
-            - requested_start_time
-            - requested_end_time
             - patient_id
-            - patient_health_info_id
     responses:
       200:
         description: Succcess
+        schema:
+          description: appointment_id
+          type: integer
       default:
         description: Error Response
         schema:
@@ -81,7 +82,7 @@ find:
       - name: only_pending 
         in: query
         type: boolean
-        description: Return only-pending appointments
+        description: Return only-pending appointments, false returns only completed appointments, null implies return all
       - name: page
         in: query
         type: integer
@@ -173,4 +174,10 @@ definitions:
         type: integer
       prescription_id:
         type: integer
+      initialize_to_now:
+        type: array
+        description: List of data & time arguments to be initialized to Now.
+        items:
+          type: string
+          enum: [date, start_time_requested, end_time_requested, start_time, end_time]
 

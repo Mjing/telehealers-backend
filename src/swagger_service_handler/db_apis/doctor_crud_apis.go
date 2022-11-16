@@ -304,7 +304,7 @@ func (req *doctorLogin) makeQuery() (sqlQuery sqlExeParams, err error) {
 		err = newQueryError("email required")
 		return
 	}
-	sqlQuery.Query = "SELECT id, name, email, phone, about, profile_picture, registration_number FROM " + doctorTbl +
+	sqlQuery.Query = "SELECT id, UUID() as session_id, name, email, phone, about, profile_picture, registration_number FROM " + doctorTbl +
 		" WHERE email = ? AND password = ?"
 	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.Email, req.Password)
 	return
@@ -313,12 +313,14 @@ func (req *doctorLogin) makeQuery() (sqlQuery sqlExeParams, err error) {
 func (resp *doctorLogin) scanRows(rows *sql.Rows) error {
 	scannedRows := 0
 	for ; rows.Next(); scannedRows++ {
-		rowData := &models.DoctorInfo{}
-		if err := rows.Scan(&rowData.ID, &rowData.Name, &rowData.Email, &rowData.Phone, &rowData.About, &rowData.ProfilePictureID, &rowData.RegistrationID); err != nil {
+		docData := &models.DoctorInfo{}
+		respBody := &doctor.GetDoctorLoginOKBody{}
+		if err := rows.Scan(&docData.ID, &respBody.SessionID, &docData.Name, &docData.Email, &docData.Phone, &docData.About, &docData.ProfilePictureID, &docData.RegistrationID); err != nil {
 			logger.Printf("[Scan Error]:%v", err)
 			return err
 		}
-		resp.info.WithPayload(rowData)
+		respBody.Doctor = docData
+		resp.info.WithPayload(respBody)
 	}
 	switch scannedRows {
 	case 0:
@@ -326,6 +328,10 @@ func (resp *doctorLogin) scanRows(rows *sql.Rows) error {
 	case 1:
 	default:
 		resp.dataError = errors.New("internal db error: multiple doctors with same email id")
+	}
+	if err := updateLoginSession(resp.info.Payload.Doctor.ID, resp.info.Payload.SessionID, "OFFLINE", docSessionTbl); err != nil {
+		logger.Printf("[Error] In doc login session-id updation:%v", err)
+		resp.dataError = errors.New("internal db error: In creating login data")
 	}
 	return nil
 }
@@ -390,3 +396,80 @@ func GetDoctorRegistrationApplicationAPI(_req doctor.GetDoctorRegisterPendingApp
 }
 
 /** End of /doctor/register/pending_applications **/
+
+/** /doctor/patients API **/
+type doctorTreatedPatients struct {
+	doctor.GetDoctorPatientsParams
+	resp doctor.GetDoctorPatientsOKBody
+}
+
+func (*doctorTreatedPatients) errResponse(httpStatus int, err error) middleware.Responder {
+	return doctor.NewGetDoctorPatientsDefault(httpStatus).WithPayload(models.Error(err.Error()))
+}
+
+func (data *doctorTreatedPatients) okResponse(int64, int64) middleware.Responder {
+	return doctor.NewGetDoctorPatientsOK().WithPayload(&data.resp)
+}
+
+func (req *doctorTreatedPatients) makeQuery() (sqlQuery sqlExeParams, err error) {
+	if req.DoctorID == 0 {
+		err = newQueryError("non-zero doctor_id required")
+		return
+	}
+	sqlQuery.Query = "SELECT p.id, p.name, p.email, p.phone, p.profile_picture FROM " + patientTbl + " as p, " +
+		aptTbl + " as apt WHERE apt.patient_id = p.id AND apt.doctor_id = ? LIMIT " +
+		fmt.Sprintf(" %v, %v", (req.Page-1)*req.PageSize, req.PageSize)
+	sqlQuery.QueryArgs = append(sqlQuery.QueryArgs, req.DoctorID)
+	return
+}
+
+func (data *doctorTreatedPatients) scanRows(rows *sql.Rows) (err error) {
+	for rows.Next() {
+		patientData := &models.PatientInfo{}
+		if err = rows.Scan(&patientData.ID, &patientData.Name, &patientData.Email,
+			&patientData.Phone, &patientData.ProfilePictureID); err != nil {
+			logger.Printf("[Scan Error]fetching doctor's patients:%v", err)
+			return
+		}
+		data.resp.Patients = append(data.resp.Patients, patientData)
+	}
+	return
+}
+
+func DoctorRelatedPatientsAPI(_req doctor.GetDoctorPatientsParams, p *models.Principal) middleware.Responder {
+	req := &doctorTreatedPatients{GetDoctorPatientsParams: _req}
+	return FetchAndRespond(req)
+}
+
+/** API /doctor/online **/
+
+/*
+* Login session maintanance helpers
+status: 'ONLINE', 'OFFLINE', ..
+*
+*/
+func updateLoginSession(doctorId int64, sessionId, status, table string) (err error) {
+	var idColumnName string
+	if table == patientSessionTbl {
+		idColumnName = "patient_id"
+	} else if table == docSessionTbl {
+		idColumnName = "doctor_id"
+	} else {
+		logger.Fatalf("BAD table:%v in updateLoginSession", table)
+	}
+	query := "INSERT INTO " + table +
+		" (" + idColumnName + ", session_id, last_login, status) VALUES (?, ?, NOW(), ?) " +
+		"ON DUPLICATE KEY UPDATE session_id = ?, status = ?, last_login = NOW()"
+	if _, _, err = ExecDataUpdateQuery(query, doctorId, sessionId, status, sessionId, status); err != nil {
+		logger.Printf("[Session ID Error]:%v:%v", query, err)
+	}
+	return
+}
+
+func DoctorOnlineAPI(req doctor.PostDoctorOnlineParams, p *models.Principal) middleware.Responder {
+	if err := updateLoginSession(*req.Req.DoctorID, *req.Req.SessionID, *req.Req.Status, docSessionTbl); err != nil {
+		logger.Printf("[Error]in updating login session:%v", err)
+		return doctor.NewGetDoctorLoginDefault(500).WithPayload("Internal db error")
+	}
+	return doctor.NewPostDoctorOnlineOK()
+}

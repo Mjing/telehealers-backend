@@ -3,6 +3,7 @@ package apis
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/go-openapi/runtime/middleware"
 	"telehealers.in/router/models"
@@ -16,16 +17,89 @@ var (
 /** Register appointment implementation **/
 type RegisterAppointment appointment.PutAppointmentRegisterParams
 
+/** inv: len(columns) == len(valsAndPlaceHolders) AND len(new(queryArgs)) == len(PlaceHolders) **/
+func parseAptInfoTimeAttrs(apt *models.AppointmentInfo, queryArgs []any) (columns, valsAndPlaceHolders []string) {
+	/** Flags to indicate which columns should be initialized to now**/
+	var dateNow, strNow, stNow, endNow, endRNow bool
+	/**Parse init array and toggle found flags**/
+	for _, v := range apt.InitializeToNow {
+		switch v {
+		case "date":
+			dateNow = true
+		case "start_time_requested":
+			strNow = true
+		case "start_time":
+			stNow = true
+		case "end_time_requested":
+			endRNow = true
+		case "end_time":
+			endNow = true
+		}
+	}
+
+	queryArgs = append(queryArgs, apt.DoctorID, apt.PatientID)
+	if dateNow {
+		columns = append(columns, "date")
+		valsAndPlaceHolders = append(valsAndPlaceHolders, "DATE(NOW())")
+	} else if apt.Date != "" {
+		columns = append(columns, "date")
+		valsAndPlaceHolders = append(valsAndPlaceHolders, "?")
+		queryArgs = append(queryArgs, apt.Date)
+	}
+
+	if strNow {
+		columns = append(columns, "requested_start_time")
+		valsAndPlaceHolders = append(valsAndPlaceHolders, "TIME(NOW())")
+	} else if apt.StartTimeRequested != "" {
+		columns = append(columns, "requested_start_time")
+		valsAndPlaceHolders = append(valsAndPlaceHolders, "?")
+		queryArgs = append(queryArgs, apt.StartTimeRequested)
+	}
+
+	if stNow {
+		columns = append(columns, "start_time")
+		valsAndPlaceHolders = append(valsAndPlaceHolders, "TIME(NOW())")
+	} else if apt.StartTime != "" {
+		columns = append(columns, "start_time")
+		valsAndPlaceHolders = append(valsAndPlaceHolders, "?")
+		queryArgs = append(queryArgs, apt.StartTime)
+	}
+
+	if endRNow {
+		columns = append(columns, "requested_end_time")
+		valsAndPlaceHolders = append(valsAndPlaceHolders, "TIME(NOW())")
+	} else if apt.EndTimeRquested != "" {
+		columns = append(columns, "requested_end_time")
+		valsAndPlaceHolders = append(valsAndPlaceHolders, "?")
+		queryArgs = append(queryArgs, apt.EndTimeRquested)
+	}
+
+	if endNow {
+		columns = append(columns, "end_time")
+		valsAndPlaceHolders = append(valsAndPlaceHolders, "TIME(NOW())")
+	} else if apt.EndTime != "" {
+		columns = append(columns, "end_time")
+		valsAndPlaceHolders = append(valsAndPlaceHolders, "?")
+		queryArgs = append(queryArgs, apt.EndTime)
+	}
+	return
+}
+
 func (param *RegisterAppointment) makeQuery() (sqlReq sqlExeParams, err error) {
-	columns := "doctor_id, patient_id, date, start_time_requested, end_time_requested"
-	if (param.Appointment.Date == "") || (param.Appointment.DoctorID == 0) || (param.Appointment.PatientID == 0) ||
-		(param.Appointment.StartTimeRequested == "") || (param.Appointment.EndTimeRquested == "") {
-		err = newQueryError(columns + " can't be empty")
+	columns := "doctor_id, patient_id"
+	if (param.Appointment.DoctorID == 0) || (param.Appointment.PatientID == 0) {
+		err = newQueryError("doctor_id and patient_id can't be empty")
 		return
 	}
-	sqlReq.QueryArgs = append(sqlReq.QueryArgs, param.Appointment.DoctorID, param.Appointment.PatientID, param.Appointment.Date, param.Appointment.StartTimeRequested,
-		param.Appointment.EndTimeRquested)
-	sqlReq.Query = fmt.Sprintf(regAptQuery, columns)
+	sqlReq.QueryArgs = append(sqlReq.QueryArgs, param.Appointment.DoctorID, param.Appointment.PatientID)
+	valueSet := "?,?"
+	timeColumns, timeVorPs := parseAptInfoTimeAttrs(param.Appointment, sqlReq.QueryArgs)
+	if len(timeColumns) > 0 {
+		columns += "," + strings.Join(timeColumns, ",")
+		valueSet += "," + strings.Join(timeVorPs, ",")
+	}
+	sqlReq.Query = fmt.Sprintf(regAptQuery, columns) + " VALUES (" + valueSet + ")"
+	logger.Printf("[Appointment QUery]:%v", sqlReq)
 	return
 }
 
@@ -36,7 +110,7 @@ func (param *RegisterAppointment) errResponse(httpCode int, err error) middlewar
 
 func (param *RegisterAppointment) okResponse(lastId, recordsAffected int64) middleware.Responder {
 	logger.Printf("[Register Appointment]Successful")
-	return appointment.NewPutAppointmentRegisterOK()
+	return appointment.NewPutAppointmentRegisterOK().WithPayload(lastId)
 }
 
 func RegisterppointmentAPI(param appointment.PutAppointmentRegisterParams,
@@ -49,11 +123,10 @@ func RegisterppointmentAPI(param appointment.PutAppointmentRegisterParams,
 type UpdateAppointment appointment.PostAppointmentUpdateParams
 
 func (param *UpdateAppointment) makeQuery() (sqlReq sqlExeParams, err error) {
-	if param.Info.ID != 0 {
+	if param.Info.ID == 0 {
 		err = newQueryError("empty id not allowed")
 		return
 	}
-	sqlReq.QueryArgs = append(sqlReq.QueryArgs, param.Info.ID)
 	var setter string
 	if param.Info.DoctorID != 0 {
 		updateQueryListString(&setter, "doctor_id", ",")
@@ -63,19 +136,13 @@ func (param *UpdateAppointment) makeQuery() (sqlReq sqlExeParams, err error) {
 		updateQueryListString(&setter, "patient_id", ",")
 		sqlReq.QueryArgs = append(sqlReq.QueryArgs, param.Info.PatientID)
 	}
-	if param.Info.StartTimeRequested == "" {
-		updateQueryListString(&setter, "start_time_requested", ",")
-		sqlReq.QueryArgs = append(sqlReq.QueryArgs, param.Info.StartTimeRequested)
+	timeColumns, timeVorPs := parseAptInfoTimeAttrs(param.Info, sqlReq.QueryArgs)
+	for i, col := range timeColumns {
+		updateQueryListStringWithOperation(&setter, fmt.Sprintf("%v = %v", col, timeVorPs[i]), ",")
 	}
-	if param.Info.EndTimeRquested == "" {
-		updateQueryListString(&setter, "end_time_requested", ",")
-		sqlReq.QueryArgs = append(sqlReq.QueryArgs, param.Info.EndTimeRquested)
-	}
-	if param.Info.Date == "" {
-		updateQueryListString(&setter, "date", ",")
-		sqlReq.QueryArgs = append(sqlReq.QueryArgs, param.Info.Date)
-	}
+	sqlReq.QueryArgs = append(sqlReq.QueryArgs, param.Info.ID)
 	sqlReq.Query = fmt.Sprintf(generalUpdateQuery, aptTbl, setter, "id = ?")
+	logger.Printf("[Update apt query]:%v", sqlReq)
 	return
 }
 
