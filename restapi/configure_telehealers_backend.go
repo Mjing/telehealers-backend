@@ -17,6 +17,7 @@ import (
 	"telehealers.in/router/restapi/operations/doctor"
 	"telehealers.in/router/restapi/operations/patient"
 	"telehealers.in/router/restapi/operations/patient_health_info"
+	"telehealers.in/router/restapi/operations/prescription"
 	"telehealers.in/router/restapi/operations/read"
 	"telehealers.in/router/restapi/operations/register"
 	"telehealers.in/router/restapi/operations/remove"
@@ -148,6 +149,12 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 		dbApis.FindAppointmentAPI)
 	api.AppointmentGetAppointmentCountHandler = appointment.GetAppointmentCountHandlerFunc(
 		dbApis.CountAppointmentAPI)
+	/** Prescription CRUD APIs **/
+	api.PrescriptionPutPrescriptionRegisterHandler = prescription.PutPrescriptionRegisterHandlerFunc(
+		dbApis.RegisterPrescriptionAPI)
+	api.PrescriptionGetPrescriptionFindHandler = prescription.GetPrescriptionFindHandlerFunc(
+		dbApis.FindPrescriptionAPI)
+
 	/** Entities CRUDs: Medicine, Tests, Advices **/
 	//Register
 	api.RegisterPutMedicineRegisterHandler = register.PutMedicineRegisterHandlerFunc(dbApis.RegisterMedicineAPI)

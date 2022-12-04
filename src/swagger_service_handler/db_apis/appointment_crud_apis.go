@@ -136,6 +136,10 @@ func (param *UpdateAppointment) makeQuery() (sqlReq sqlExeParams, err error) {
 		updateQueryListString(&setter, "patient_id", ",")
 		sqlReq.QueryArgs = append(sqlReq.QueryArgs, param.Info.PatientID)
 	}
+	if param.Info.PrescriptionID != 0 {
+		updateQueryListString(&setter, "prescription_id", ",")
+		sqlReq.QueryArgs = append(sqlReq.QueryArgs, param.Info.PrescriptionID)
+	}
 	timeColumns, timeVorPs := parseAptInfoTimeAttrs(param.Info, sqlReq.QueryArgs)
 	for i, col := range timeColumns {
 		updateQueryListStringWithOperation(&setter, fmt.Sprintf("%v = %v", col, timeVorPs[i]), ",")
@@ -195,32 +199,56 @@ type FindAppointment struct {
 	fetchedData *appointment.GetAppointmentFindOKBody
 }
 
-func (param *FindAppointment) makeQuery() (sqlReq sqlExeParams, err error) {
-	req := &param.param
-	if req.OnDate == "" {
-		err = newQueryError("invalid on_date value")
+/** Returns a condition filter of form " WHERE ...." **/
+func makeAptTblFilter(date, fromDate, toDate *string, aptID, docID, patID *int64, onlyPending *bool) (sqlReq sqlExeParams) {
+	sqlReq.Query = " WHERE ISNULL(start_time) = 0 AND ISNULL(end_time) = 0"
+
+	if (aptID != nil) && (*aptID != 0) {
+		sqlReq.Query += fmt.Sprintf(" AND id = %v", *aptID)
 		return
 	}
-	condition := " WHERE (on_date = ?)"
-	orderBy := ""
-	sqlReq.QueryArgs = append(sqlReq.QueryArgs, req.OnDate)
-	if *req.DoctorID != 0 {
-		condition += " AND (doctor_id = ?)"
-		sqlReq.QueryArgs = append(sqlReq.QueryArgs, *req.DoctorID)
-	}
-	if *req.PatientID != 0 {
-		condition += " AND (patient_id = ?)"
-		sqlReq.QueryArgs = append(sqlReq.QueryArgs, *req.PatientID)
-	}
-	if req.OnlyPending == nil {
-		if *req.OnlyPending {
-			condition += " AND (prescription_id == NULL)"
-		} else {
-			condition += " AND (prescription_id != NULL)"
+
+	if (date != nil) && (*date != "") {
+		sqlReq.Query += " AND (date = DATE(?))"
+		sqlReq.QueryArgs = append(sqlReq.QueryArgs, *date)
+	} else {
+		if (fromDate != nil) && (*fromDate != "") {
+			sqlReq.Query += " AND (date >= DATE(?))"
+			sqlReq.QueryArgs = append(sqlReq.QueryArgs, *fromDate)
+		}
+		if (toDate != nil) && (*toDate != "") {
+			sqlReq.Query += " AND (date <= DATE(?))"
+			sqlReq.QueryArgs = append(sqlReq.QueryArgs, *toDate)
+		} else if fromDate == nil {
+			sqlReq.Query += " AND ISNULL(date) = 0 "
 		}
 	}
-	orderBy = " ORDER BY date, requested_start_time ASC"
-	sqlReq.Query = fmt.Sprintf(generalFetchQuery, aptFetchColumns, aptTbl+condition, req.Size*(req.Page-1), req.Size) + orderBy
+
+	if (docID != nil) && (*docID != 0) {
+		sqlReq.Query += " AND doctor_id = ?"
+		sqlReq.QueryArgs = append(sqlReq.QueryArgs, *docID)
+	}
+	if (patID != nil) && (*patID != 0) {
+		sqlReq.Query += " AND patient_id = ?"
+		sqlReq.QueryArgs = append(sqlReq.QueryArgs, *patID)
+	}
+	if onlyPending != nil {
+		if *onlyPending {
+			sqlReq.Query += " AND ISNULL(prescription_id)"
+		} else {
+			sqlReq.Query += " AND ISNULL(prescription_id) = 0"
+		}
+	}
+	return
+}
+
+func (param *FindAppointment) makeQuery() (sqlReq sqlExeParams, err error) {
+	req := &param.param
+	sqlReq = makeAptTblFilter(req.OnDate, req.FromDate, req.ToDate, req.ID, req.DoctorID, req.PatientID, req.OnlyPending)
+	orderBy := " ORDER BY date, requested_start_time DESC"
+	sqlReq.Query = fmt.Sprintf(generalFetchQuery, aptFetchColumns, aptTbl+sqlReq.Query+orderBy,
+		(*req.Size)*((*req.Page)-1), (*req.Size))
+	logger.Printf("[Checkpoint] Apt query:%v", sqlReq)
 	return
 }
 
@@ -265,28 +293,8 @@ type CountAppointment struct {
 
 func (param *CountAppointment) makeQuery() (sqlReq sqlExeParams, err error) {
 	req := &param.param
-	if req.OnDate == "" {
-		err = newQueryError("invalid on_date value")
-		return
-	}
-	condition := " WHERE (on_date = ?)"
-	sqlReq.QueryArgs = append(sqlReq.QueryArgs, req.OnDate)
-	if req.DoctorID == nil && *req.DoctorID != 0 {
-		condition += " AND (doctor_id = ?)"
-		sqlReq.QueryArgs = append(sqlReq.QueryArgs, *req.DoctorID)
-	}
-	if req.PatientID == nil && *req.PatientID != 0 {
-		condition += " AND (patient_id = ?)"
-		sqlReq.QueryArgs = append(sqlReq.QueryArgs, *req.PatientID)
-	}
-	if req.OnlyPending == nil {
-		if *req.OnlyPending {
-			condition += " AND (prescription_id == NULL)"
-		} else {
-			condition += " AND (prescription_id != NULL)"
-		}
-	}
-	sqlReq.Query = "SELECT COUNT(*) FROM " + aptTbl + condition
+	sqlReq = makeAptTblFilter(req.OnDate, req.FromDate, req.ToDate, req.ID, req.DoctorID, req.PatientID, req.OnlyPending)
+	sqlReq.Query = "SELECT COUNT(*) FROM " + aptTbl + sqlReq.Query
 	return
 }
 

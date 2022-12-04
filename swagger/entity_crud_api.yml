@@ -9,9 +9,17 @@ register:
       - name: info
         in: body
         schema:
+          type: object
           required:
-            - name
-          $ref: '#/definitions/entity'
+            - data
+          properties:
+            data:
+              required:
+                - name
+              $ref: '#/definitions/entity'
+            created_by:
+              type: integer
+              description: User ID who is calling this data.
     responses:
       200:
         description: id of registered data
@@ -49,7 +57,7 @@ find:
       - entity
     description: Find matches, in case of no param all data will be fetched
     parameters:
-      - name: nameContains
+      - name: name_containing
         in: query
         description: Name containing this string
         type: string
@@ -61,12 +69,10 @@ find:
         in: query
         type: integer
         default: 1
-        required: true
       - name: page_size
         in: query
         type: integer
         default: 10
-        required: true
     responses:
       200:
         description: List of matched entries

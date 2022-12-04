@@ -1,5 +1,7 @@
-/** This file contains implementation of entity struct(currently: medicines, tests and adivces)
-entities are all data containing name and description only.**/
+/*
+* This file contains implementation of entity struct(currently: medicines, tests and adivces)
+entities are all data containing name and description only.*
+*/
 package apis
 
 import (
@@ -16,8 +18,9 @@ import (
 )
 
 type insertEntityReq struct {
-	req   *models.Entity
-	table *string
+	req       *models.Entity
+	createdBy int64
+	table     *string
 }
 
 func (param *insertEntityReq) makeQuery() (sqlReq sqlExeParams, err error) {
@@ -33,6 +36,7 @@ func (param *insertEntityReq) makeQuery() (sqlReq sqlExeParams, err error) {
 		values += ",?"
 	}
 	sqlReq.Query = fmt.Sprintf(generalInsertQuery, *param.table, columns) + " (" + values + ")"
+	logger.Printf("[Checkpoint] Insert Entity Query:%v [ARGS:%v]", sqlReq.Query, sqlReq.QueryArgs)
 	return
 }
 
@@ -97,10 +101,10 @@ func (req *findEntityReq) makeQuery() (sqlReq sqlExeParams, err error) {
 		updateQueryListString(&queryFilter, "id", " AND ")
 		sqlReq.QueryArgs = append(sqlReq.QueryArgs, req.id)
 	}
-	if (req.substrInName != nil) && (*req.substrInName == "") {
+	if (req.substrInName != nil) && (*req.substrInName != "") {
 		updateQueryListStringWithOperation(&queryFilter,
 			"LOWER(name) LIKE CONCAT('%', CONCAT(LOWER(?),'%'))", " AND ")
-		sqlReq.QueryArgs = append(sqlReq.QueryArgs, req.substrInName)
+		sqlReq.QueryArgs = append(sqlReq.QueryArgs, *req.substrInName)
 	}
 	if queryFilter != "" {
 		queryFilter = " WHERE " + queryFilter
@@ -109,6 +113,7 @@ func (req *findEntityReq) makeQuery() (sqlReq sqlExeParams, err error) {
 		*req.table+queryFilter,
 		(req.page-1)*req.pageSize,
 		req.pageSize)
+	logger.Printf("[Checkpoint]Find entity query:%v [ARGS:%v]", sqlReq.Query, sqlReq.QueryArgs)
 	return
 }
 
@@ -130,11 +135,11 @@ func (*insertMedicineReq) okResponse(id int64, affectedRows int64) middleware.Re
 }
 
 func RegisterMedicineAPI(param register.PutMedicineRegisterParams, p *models.Principal) middleware.Responder {
-	req := &insertMedicineReq{insertEntityReq{req: param.Info, table: &medicineTbl}}
+	req := &insertMedicineReq{insertEntityReq{req: param.Info.Data, createdBy: param.Info.CreatedBy, table: &medicineTbl}}
 	return UpdateAndRespond(req)
 }
 
-//Update
+// Update
 type updateMedicineReq struct {
 	updateEntityReq
 }
@@ -210,8 +215,9 @@ func (req *findMedReq) okResponse(int64, int64) middleware.Responder {
 }
 
 func FindMedicineAPI(param read.GetMedicineFindParams, p *models.Principal) middleware.Responder {
+	logger.Printf("asd %v", *param.NameContaining)
 	req := &findMedReq{findEntityReq: findEntityReq{table: &medicineTbl,
-		id: param.ID, substrInName: param.NameContains, page: param.Page, pageSize: param.PageSize}}
+		id: param.ID, substrInName: param.NameContaining, page: *param.Page, pageSize: *param.PageSize}}
 	return FetchAndRespond(req)
 }
 
@@ -235,11 +241,11 @@ func (*insertAdviceReq) okResponse(id int64, ar int64) middleware.Responder {
 }
 
 func RegisterAdviceAPI(param register.PutMedicalAdviceRegisterParams, p *models.Principal) middleware.Responder {
-	req := &insertAdviceReq{insertEntityReq{req: param.Info, table: &adviceTbl}}
+	req := &insertAdviceReq{insertEntityReq{req: param.Info.Data, createdBy: param.Info.CreatedBy, table: &adviceTbl}}
 	return UpdateAndRespond(req)
 }
 
-//Update
+// Update
 type updateAdviceReq struct {
 	updateEntityReq
 }
@@ -316,7 +322,7 @@ func (req *findAdviceReq) okResponse(int64, int64) middleware.Responder {
 
 func FindAdviceAPI(param read.GetMedicalAdviceFindParams, p *models.Principal) middleware.Responder {
 	req := &findAdviceReq{findEntityReq: findEntityReq{table: &adviceTbl,
-		id: param.ID, substrInName: param.NameContains, page: param.Page, pageSize: param.PageSize}}
+		id: param.ID, substrInName: param.NameContaining, page: *param.Page, pageSize: *param.PageSize}}
 	return FetchAndRespond(req)
 }
 
@@ -340,11 +346,11 @@ func (*insertMedTestReq) okResponse(id int64, ar int64) middleware.Responder {
 }
 
 func RegisterTestAPI(param register.PutMedicalTestRegisterParams, p *models.Principal) middleware.Responder {
-	req := &insertMedTestReq{insertEntityReq{req: param.Info, table: &testTbl}}
+	req := &insertMedTestReq{insertEntityReq{req: param.Info.Data, createdBy: param.Info.CreatedBy, table: &testTbl}}
 	return UpdateAndRespond(req)
 }
 
-//Update
+// Update
 type updateMedTestReq struct {
 	updateEntityReq
 }
@@ -420,8 +426,8 @@ func (req *findMedTestReq) okResponse(int64, int64) middleware.Responder {
 }
 
 func FindMedTestAPI(param read.GetMedicalTestFindParams, p *models.Principal) middleware.Responder {
-	req := &findMedTestReq{findEntityReq: findEntityReq{table: &medicineTbl,
-		id: param.ID, substrInName: param.NameContains, page: param.Page, pageSize: param.PageSize}}
+	req := &findMedTestReq{findEntityReq: findEntityReq{table: &testTbl,
+		id: param.ID, substrInName: param.NameContaining, page: *param.Page, pageSize: *param.PageSize}}
 	return FetchAndRespond(req)
 }
 

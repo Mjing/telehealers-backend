@@ -55,6 +55,17 @@ find:
         in: query
         type: integer
         description: System id number
+      - name: ids
+        in: query
+        description: List of patient IDs to be fetched
+        type: array
+        items: 
+          type: integer
+          description: System ID number
+      - name: of_doctor
+        in: query
+        description: ID of doctor which patients have been consulted in past
+        type: integer
       - name: name_containing
         in: query
         type: string

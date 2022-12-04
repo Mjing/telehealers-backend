@@ -99,7 +99,8 @@ review_registration_application:
     tags:
       - doctor
       - for_admin
-    description: Endpoint to approve or deny doctors registration application.
+    description: "Endpoint to approve or deny doctors registration application.
+      Use link to review:https://www.nmc.org.in/information-desk/indian-medical-register/"
     parameters:
       - name: review
         in: body

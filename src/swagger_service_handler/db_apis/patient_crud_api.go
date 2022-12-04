@@ -14,12 +14,11 @@ var (
 	insertPatQuery = "INSERT INTO " + patientTbl + " (%v) VALUES (%v)"
 	updatePatQuery = "UPDATE " + patientTbl + " SET %v WHERE %v"
 	deletePatQuery = "DELETE FROM " + patientTbl + " WHERE %v"
-	findPatQuery   = "SELECT id, name, email, phone, profile_picture FROM " +
-		patientTbl + " WHERE "
+	findPatQuery   = "SELECT id, name, email, IFNULL(phone, '') as phone, " +
+		"IFNULL(profile_picture, 0) as profile_picture FROM " + patientTbl + " WHERE "
 )
 
 func makeInsertPatQuery(patient *models.PatientInfo) (query string, queryArgs []any, err error) {
-	logger.Printf("xxxxxxxx %v", *patient)
 	if patient.Name == "" || patient.Email == "" || patient.Password == "" {
 		err = newQueryError("patient name, email and password can't be empty")
 		return
@@ -141,14 +140,31 @@ func RemovePatient(param patient.DeletePatientRemoveParams) middleware.Responder
 /** query & queryArgs, should be used together**/
 func makeFindPatQuery(param patient.GetPatientFindParams) (query string, queryArgs []any, err error) {
 	if param.ID != nil && *param.ID != 0 {
-		query = findPatQuery + "id = ?"
+		query = "id = ?"
 		queryArgs = append(queryArgs, *param.ID)
-	} else if param.NameContaining != nil && *param.NameContaining != "" {
-		query = findPatQuery + "LOWER(name) LIKE CONCAT('%',LOWER(?),'%')"
-		queryArgs = append(queryArgs, *param.NameContaining)
-	} else {
-		err = newQueryError("one of id or name_containing param needed")
 	}
+	if param.NameContaining != nil && *param.NameContaining != "" {
+		updateQueryListStringWithOperation(&query, "LOWER(name) LIKE CONCAT('%',LOWER(?),'%')", "AND")
+		queryArgs = append(queryArgs, *param.NameContaining)
+	}
+	if len(param.Ids) != 0 {
+		placeHolders := ""
+		for _, id := range param.Ids {
+			updateQueryListStringWithOperation(&placeHolders, "?", ",")
+			queryArgs = append(queryArgs, id)
+		}
+		updateQueryListStringWithOperation(&query, "id in ("+placeHolders+")", "AND")
+	}
+	if param.OfDoctor != nil {
+		updateQueryListStringWithOperation(&query,
+			fmt.Sprintf("id IN (SELECT patient_id FROM %v WHERE doctor_id = %v)",
+				aptTbl, *param.OfDoctor), "AND")
+	}
+	if query == "" {
+		err = newQueryError("one of query-param is needed")
+	}
+
+	query = findPatQuery + query
 	logger.Printf("[INFO]query:%v args:%v err:%v", query, queryArgs, err)
 	return
 }
@@ -179,7 +195,7 @@ func FindPatient(param patient.GetPatientFindParams) middleware.Responder {
 		}
 		fountPats.Patients = append(fountPats.Patients, patData)
 	}
-	logger.Printf("[Success]find game api")
+	logger.Printf("[Success]find patient API")
 	return patient.NewGetPatientFindOK().WithPayload(fountPats)
 }
 

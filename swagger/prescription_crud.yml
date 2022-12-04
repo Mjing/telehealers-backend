@@ -1,0 +1,173 @@
+# Entity crud APIs include: Medicine, Advice, Tests
+# Entities are simple objects containing a name and description
+register:
+  put:
+    tags:
+      - prescription
+      - register
+    description: "Endpoint to insert prescription. 
+      * Providing appointment_id will add prescription to appointment.
+      * Providing name will create atmost create 2 prescriptions, one named and one
+        un-named. 
+          1. named prescription will be inserted or updated.
+          2. un-named prescription will be added to appointment if provided and will not
+        be updated in future.
+        * This is done to maintain history of prescriptions
+        "
+    parameters:
+      - name: prescription
+        in: body
+        schema:
+          $ref: './prescription_crud.yml#/definitions/prescription'
+    responses:
+      200:
+        description: id of registered data
+        schema:
+          $ref: './definitions.yml#/passed_reg_info'
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+update:
+  post:
+    tags:
+      - prescription
+      - update
+    parameters:
+      - name: prescription
+        in: body
+        schema:
+          $ref: './prescription_crud.yml#/definitions/prescription'
+    responses:
+      200:
+        description: Success
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+find:
+  get:
+    tags:
+      - prescription
+      - read
+    description: "Find matches, in case of no param all data will be fetched.Currently only ID param is implemented."
+    parameters:
+      - name: search
+        in: query
+        description: search following string in prescription
+        type: string
+      - name: id
+        in: query
+        description: System id of resource
+        type: integer
+      - name: provide_suggestion
+        in: query
+        type: boolean
+        default: false
+        description: "True for fetching only suggestions, False for fetching only prescriptions"
+      - name: created_by
+        in: query
+        type: integer
+        description: ID of doctor who created this prescription, will also be used to authenticate data
+      - name: page
+        in: query
+        type: integer
+        default: 1
+      - name: page_size
+        in: query
+        type: integer
+        default: 10
+    responses:
+      200:
+        description: List of matched entries
+        schema:
+          type: object
+          properties:
+            prescriptions:
+              type: array
+              items:
+                $ref: './prescription_crud.yml#/definitions/prescription'
+            suggestions:
+              type: array
+              items:
+                description: Short data, for referrencing precriptions
+                $ref: './prescription_crud.yml#/definitions/map_object'
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+remove:
+  delete:
+    tags:
+      - prescription
+      - remove
+    parameters:
+      - name: id
+        in: query
+        type: integer
+        required: true
+    responses:
+      200:
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+      
+definitions:
+  map_object:
+    type: object
+    properties:
+      id:
+        type: integer
+        description: ID, use for insert/update
+      description:
+        type: string
+        description: Reason/Extra-comments associated with the id
+      name:
+        type: string
+        description: Associated name, only for read APIs
+  prescription:
+    type: object
+    properties:
+      appointment_id:
+        type: integer
+        description: Appointment ID to associate prescription with
+      medicines:
+        type: array
+        description: List of medicines associated with this prescriptions
+        items:
+          $ref: './prescription_crud.yml#/definitions/map_object'
+      medical_tests:
+        type: array
+        description: List of tests associated with this prescriptions
+        items:
+          $ref: './prescription_crud.yml#/definitions/map_object'
+      advices:
+        type: array
+        description: List of advices associated with this prescriptions
+        items:
+          $ref: './prescription_crud.yml#/definitions/map_object'
+      comments_on_meds:
+        type: string
+        description: Over-all comments on medicine, could be HTML string
+      comments_on_tests:
+        type: string
+        description: Over-all comments on tests, could be HTML string
+      overall_advice:
+        type: string
+        description: Overall advice, could be an HTML string
+      id:
+        type: integer
+        description: Prescription ID
+      created_by:
+        type: integer
+        description: ID of creator
+      name:
+        type: string
+        description: Prescription identifier, incomplete/substring are utilized in APIs
+      date:
+        type: string
+        description: Date on which prescription was last updated by doc, in YYYY-MM-DD format.
+      description:
+        type: string
+        description: Description assiciated with prescription template.
