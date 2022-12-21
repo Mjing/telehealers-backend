@@ -48,20 +48,23 @@ const (
 		"date, start_time, IFNULL(end_time, ''), requested_start_time, IFNULL(requested_end_time, '')"
 	//columns:gender,height,weight,bp,health_complaints,patient_id,created_on
 	patienHealthInfoTbl = "patient_health_info"
-	//columns:doctor_id, session_id, last_login, status
-	docSessionTbl = "doctor_availibility_status"
-	//columns:patient_id, session_id, last_login, status
-	patientSessionTbl = "patient_availability_status"
+	//columns:id,user_type,user_id,session_id,status,last_login
+	sessionTbl = "user_availability_status"
 	//columns:id, comment_on_medicines, comment_on_tests, comment_on_advices, name, created_on, last_updated
 	prescriptionTbl = "prescriptions"
+	//columns:id,created_on,user_id,user_type,path
+	fileStoreTbl = "file_store"
+	//columns:id,type,status,description,created_by,last_updated
+	helpdeskTbl = "helpdesk_tickets"
 )
 
 // General Entities
 // Columns: name, description
 var (
-	medicineTbl = "medicines"
-	testTbl     = "med_tests"
-	adviceTbl   = "advices"
+	medicineTbl   = "medicines"
+	testTbl       = "med_tests"
+	adviceTbl     = "advices"
+	medServiceTbl = "doctor_specialities"
 )
 
 // Map tables
@@ -69,6 +72,8 @@ var (
 	prescToMedMap  = "prescription_to_medicines_map"
 	prescToTestMap = "prescription_to_tests_map"
 	prescToAdvMap  = "prescription_to_advices_map"
+	//File store path
+	fileStoreRoot = "./"
 )
 
 const (

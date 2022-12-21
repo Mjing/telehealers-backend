@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 
+	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 
 	"telehealers.in/router/models"
@@ -16,7 +18,7 @@ var (
 	insertDocQuery = "INSERT INTO " + doctorTbl + " (%v) VALUES (%v)"
 	updateDocQuery = "UPDATE " + doctorTbl + " SET %v WHERE %v"
 	deleteDocQuery = "DELETE FROM " + doctorTbl + " WHERE %v"
-	findDocQuery   = "SELECT id, name, email, phone, about, profile_picture FROM " +
+	findDocQuery   = "SELECT id, name, email, phone, about, profile_picture, sign_pic FROM " +
 		doctorTbl + " WHERE "
 )
 
@@ -41,6 +43,11 @@ func makeInsertDocQuery(doctor *models.DoctorInfo) (query string, queryArgs []an
 		columns += ",profile_picture"
 		values += ",?"
 		queryArgs = append(queryArgs, doctor.ProfilePictureID)
+	}
+	if doctor.SignPictureID != 0 {
+		columns += ",sign_pic"
+		values += ",?"
+		queryArgs = append(queryArgs, doctor.SignPictureID)
 	}
 	query = fmt.Sprintf(insertDocQuery, columns, values)
 	return
@@ -194,6 +201,11 @@ func makeUpdateDoctorQuery(doc *models.DoctorInfo) (query string, queryArgs []an
 		updateQueryListString(&set, "profile_picture", ",")
 		queryArgs = append(queryArgs, doc.ProfilePictureID)
 	}
+	if doc.SignPictureID != 0 {
+		updateQueryListString(&set, "sign_pic", ",")
+		queryArgs = append(queryArgs, doc.SignPictureID)
+	}
+	queryArgs = append(queryArgs, doc.ID)
 	return fmt.Sprintf(updateDocQuery, set, cond), queryArgs, nil
 }
 
@@ -205,7 +217,7 @@ func UpdateDoctor(param doctor.PostDoctorUpdateParams) middleware.Responder {
 		return doctor.NewPostDoctorUpdateDefault(400).WithPayload(models.Error(queryErr.Error()))
 	}
 	if _, _, err := ExecDataUpdateQuery(query, queryArgs...); err != nil {
-		logger.Printf("[Error]db error:%v", err)
+		logger.Printf("[Error]db error:%v|query:%v[args:%v]", err, query, queryArgs)
 		return doctor.NewPostDoctorUpdateDefault(500).WithPayload("internale error")
 	}
 	return doctor.NewPostDoctorUpdateOK()
@@ -270,7 +282,7 @@ func FindDoctor(param doctor.GetDoctorFindParams) middleware.Responder {
 	for rows.Next() {
 		docData := &models.DoctorInfo{}
 		if scanErr := rows.Scan(&docData.ID, &docData.Name, &docData.Email,
-			&docData.Phone, &docData.About, &docData.ProfilePictureID); scanErr != nil {
+			&docData.Phone, &docData.About, &docData.ProfilePictureID, &docData.SignPictureID); scanErr != nil {
 			logger.Printf("[Error]doctor data scan error:%v", scanErr)
 			return doctor.NewGetDoctorFindDefault(500).WithPayload("internal db error in data read")
 		}
@@ -287,6 +299,16 @@ type doctorLogin struct {
 	dataError error
 }
 
+func (okResp *doctorLogin) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+	cookie := &http.Cookie{Name: "th-ssid", Value: okResp.info.Payload.SessionID, Path: "/",
+		SameSite: http.SameSiteNoneMode, Secure: true}
+	http.SetCookie(rw, cookie)
+	rw.WriteHeader(200)
+	if respErr := producer.Produce(rw, okResp.info.Payload); respErr != nil {
+		logger.Fatalf("[CRITICAL ERROR] Unable to write response:%v", respErr)
+	}
+}
+
 func (*doctorLogin) errResponse(httpStatusCode int, err error) middleware.Responder {
 	return doctor.NewGetDoctorLoginDefault(httpStatusCode).WithPayload(models.Error(err.Error()))
 }
@@ -296,7 +318,7 @@ func (data *doctorLogin) okResponse(int64, int64) middleware.Responder {
 		logger.Printf("[Query Error] Query or DB error:%v", data.dataError)
 		return doctor.NewGetDoctorLoginDefault(400).WithPayload(models.Error(data.dataError.Error()))
 	}
-	return &data.info
+	return data
 }
 
 func (req *doctorLogin) makeQuery() (sqlQuery sqlExeParams, err error) {
@@ -329,7 +351,7 @@ func (resp *doctorLogin) scanRows(rows *sql.Rows) error {
 	default:
 		resp.dataError = errors.New("internal db error: multiple doctors with same email id")
 	}
-	if err := updateLoginSession(resp.info.Payload.Doctor.ID, resp.info.Payload.SessionID, "OFFLINE", docSessionTbl); err != nil {
+	if err := updateLoginSession(resp.info.Payload.Doctor.ID, resp.info.Payload.SessionID, "offline", "doctor"); err != nil {
 		logger.Printf("[Error] In doc login session-id updation:%v", err)
 		resp.dataError = errors.New("internal db error: In creating login data")
 	}
@@ -448,26 +470,26 @@ func DoctorRelatedPatientsAPI(_req doctor.GetDoctorPatientsParams, p *models.Pri
 status: 'ONLINE', 'OFFLINE', ..
 *
 */
-func updateLoginSession(doctorId int64, sessionId, status, table string) (err error) {
-	var idColumnName string
-	if table == patientSessionTbl {
-		idColumnName = "patient_id"
-	} else if table == docSessionTbl {
-		idColumnName = "doctor_id"
-	} else {
-		logger.Fatalf("BAD table:%v in updateLoginSession", table)
+func updateLoginSession(userID int64, sessionId, status, userType string) (err error) {
+	if (userType != "patient") && (userType != "doctor") {
+		return fmt.Errorf("bad user-type:%v", userType)
 	}
-	query := "INSERT INTO " + table +
-		" (" + idColumnName + ", session_id, last_login, status) VALUES (?, ?, NOW(), ?) " +
-		"ON DUPLICATE KEY UPDATE session_id = ?, status = ?, last_login = NOW()"
-	if _, _, err = ExecDataUpdateQuery(query, doctorId, sessionId, status, sessionId, status); err != nil {
+
+	query := "INSERT INTO " + sessionTbl +
+		" (user_id, user_type, session_id, status) VALUES (?, ?, ?, ?) " +
+		"ON DUPLICATE KEY UPDATE session_id = ?, status = ?"
+	if _, _, err = ExecDataUpdateQuery(query, userID, userType, sessionId, status, sessionId, status); err != nil {
 		logger.Printf("[Session ID Error]:%v:%v", query, err)
 	}
 	return
 }
 
 func DoctorOnlineAPI(req doctor.PostDoctorOnlineParams, p *models.Principal) middleware.Responder {
-	if err := updateLoginSession(*req.Req.DoctorID, *req.Req.SessionID, *req.Req.Status, docSessionTbl); err != nil {
+	status := "online"
+	if *req.Req.Status == "OFFLINE" {
+		status = "offline"
+	}
+	if err := updateLoginSession(*req.Req.DoctorID, *req.Req.SessionID, status, "doctor"); err != nil {
 		logger.Printf("[Error]in updating login session:%v", err)
 		return doctor.NewGetDoctorLoginDefault(500).WithPayload("Internal db error")
 	}

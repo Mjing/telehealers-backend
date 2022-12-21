@@ -39,6 +39,13 @@ paths:
           description: Error response
           schema:
             $ref: './definitions.yml#/error'
+  # Image CRUD APIs
+  /file/upload:
+    $ref: './file_store_api.yml#/upload'
+  /file/download:
+    $ref: './file_store_api.yml#/download'
+  /file/remove:
+    $ref: './file_store_api.yml#/remove'
   # Doctor CRUD APIs
   /doctor/register:
     $ref: './doctor_crud_api.yml#/register'
@@ -124,6 +131,24 @@ paths:
     $ref: './prescription_crud.yml#/find'
   /prescription/remove:
     $ref: './prescription_crud.yml#/remove'
+  # Service crud APIs
+  /medical/services/register:
+    $ref: './entity_crud_api.yml#/register'
+  /medical/services/remove:
+    $ref: './entity_crud_api.yml#/remove'
+  /medical/services/update:
+    $ref: './entity_crud_api.yml#/update'
+  /medical/services/find:
+    $ref: './entity_crud_api.yml#/find'
+  # Request admin approval
+  /helpdesk/ticket/open:
+    $ref: './helpdesk_crud_api.yml#/open'
+  /helpdesk/ticket/update:
+    $ref: './helpdesk_crud_api.yml#/update'
+  /helpdesk/ticket/find:
+    $ref: './helpdesk_crud_api.yml#/find'
+  /helpdesk/ticket/find/count:
+    $ref: './helpdesk_crud_api.yml#/count'
 
   /room_access_token:
     get:

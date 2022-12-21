@@ -432,3 +432,109 @@ func FindMedTestAPI(param read.GetMedicalTestFindParams, p *models.Principal) mi
 }
 
 /***************************END MEDICINE Test APIs*******************************/
+
+/*** Medical service CRUDs, servuces like general, psyciatry etc ***/
+//Insert
+type insertMedServiceReq struct {
+	insertEntityReq
+}
+
+func (param *insertMedServiceReq) errResponse(httpCode int, err error) middleware.Responder {
+	logger.Printf("[Register test API]Error:code:%v|error:%v",
+		httpCode, err)
+	return register.NewPutMedicalServicesRegisterDefault(httpCode).WithPayload(
+		models.Error(err.Error()))
+}
+
+func (*insertMedServiceReq) okResponse(id int64, ar int64) middleware.Responder {
+	return register.NewPutMedicalServicesRegisterOK().WithPayload(&models.PassedRegInfo{ID: id})
+}
+
+func RegisterMedServiceAPI(param register.PutMedicalServicesRegisterParams, p *models.Principal) middleware.Responder {
+	req := &insertMedServiceReq{insertEntityReq{req: param.Info.Data,
+		createdBy: param.Info.CreatedBy, table: &medServiceTbl}}
+	return UpdateAndRespond(req)
+}
+
+// Update
+type updateMedServiceReq struct {
+	updateEntityReq
+}
+
+func (param *updateMedServiceReq) errResponse(httpCode int, err error) middleware.Responder {
+	logger.Printf("[Update test API]Error:code:%v|error:%v",
+		httpCode, err)
+	return update.NewPostMedicalServicesUpdateDefault(httpCode).WithPayload(
+		models.Error(err.Error()))
+}
+
+func (*updateMedServiceReq) okResponse(int64, int64) middleware.Responder {
+	return update.NewPostMedicalServicesUpdateOK()
+}
+
+func UpdateMedServiceAPI(param update.PostMedicalServicesUpdateParams, p *models.Principal) middleware.Responder {
+	req := &updateMedServiceReq{updateEntityReq{req: param.Info, table: &medServiceTbl}}
+	return UpdateAndRespond(req)
+}
+
+//Remove
+
+type removeMedServiceReq struct {
+	deleteEntityReq
+}
+
+func (param *removeMedServiceReq) errResponse(httpCode int, err error) middleware.Responder {
+	logger.Printf("[Remove test API]Error:code:%v|error:%v",
+		httpCode, err)
+	return remove.NewDeleteMedicalServicesRemoveDefault(httpCode).WithPayload(
+		models.Error(err.Error()))
+}
+
+func (*removeMedServiceReq) okResponse(int64, int64) middleware.Responder {
+	return remove.NewDeleteMedicalServicesRemoveOK()
+}
+
+func RemoveMedServiceAPI(param remove.DeleteMedicalServicesRemoveParams, p *models.Principal) middleware.Responder {
+	req := &removeMedServiceReq{deleteEntityReq{deleteID: param.ID, table: &medServiceTbl}}
+	return UpdateAndRespond(req)
+}
+
+//Find
+
+type findMedServiceReq struct {
+	findEntityReq
+	fetchedData *read.GetMedicalServicesFindOKBody
+}
+
+func (req *findMedServiceReq) scanRows(rows *sql.Rows) (err error) {
+	req.fetchedData = &read.GetMedicalServicesFindOKBody{}
+	for rows.Next() {
+		row := &models.Entity{}
+		if scanErr := rows.Scan(&row.ID, &row.Name, &row.Description); scanErr != nil {
+			logger.Printf("[Find medical test api]Error:%v", scanErr)
+			err = errors.New("internal db read error")
+			break
+		}
+		req.fetchedData.Data = append(req.fetchedData.Data, row)
+	}
+	return
+}
+
+func (param *findMedServiceReq) errResponse(httpCode int, err error) middleware.Responder {
+	logger.Printf("[Find medical test API]Error:code:%v|error:%v",
+		httpCode, err)
+	return read.NewGetMedicalServicesFindDefault(httpCode).WithPayload(
+		models.Error(err.Error()))
+}
+
+func (req *findMedServiceReq) okResponse(int64, int64) middleware.Responder {
+	return read.NewGetMedicalServicesFindOK().WithPayload(req.fetchedData)
+}
+
+func FindMedServiceAPI(param read.GetMedicalServicesFindParams, p *models.Principal) middleware.Responder {
+	req := &findMedServiceReq{findEntityReq: findEntityReq{table: &medServiceTbl,
+		id: param.ID, substrInName: param.NameContaining, page: *param.Page, pageSize: *param.PageSize}}
+	return FetchAndRespond(req)
+}
+
+/***************************END MEDICINE Test APIs*******************************/

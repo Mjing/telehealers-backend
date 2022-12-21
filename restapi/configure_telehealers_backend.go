@@ -15,6 +15,8 @@ import (
 	"telehealers.in/router/restapi/operations/appointment"
 	"telehealers.in/router/restapi/operations/conferrencing"
 	"telehealers.in/router/restapi/operations/doctor"
+	"telehealers.in/router/restapi/operations/file"
+	"telehealers.in/router/restapi/operations/helpdesk"
 	"telehealers.in/router/restapi/operations/patient"
 	"telehealers.in/router/restapi/operations/patient_health_info"
 	"telehealers.in/router/restapi/operations/prescription"
@@ -30,11 +32,12 @@ import (
 //go:generate swagger generate server --target ../../telehealers --name TelehealersBackend --spec ../swagger/swagger.yml --principal interface{}
 
 type customServerOptions struct {
-	Log    string `short:"l" long:"log" description:"Log file"`
-	DBName string `long:"dbname" description:"data-base name, leave empty to toggle reading vars from env variables"`
-	DBUser string `long:"dbuser" description:"db username for login" default:"root"`
-	DBPass string `long:"dbpass" description:"db password for login" default:""`
-	DBAddr string `long:"dbaddr" description:"db address in for ip:port" default:"127.0.0.1:3306"`
+	Log     string `short:"l" long:"log" description:"Log file"`
+	DataDir string `short:"dd" long:"datadir" description:"Set root of data dir to this variable"`
+	DBName  string `long:"dbname" description:"data-base name, leave empty to toggle reading vars from env variables"`
+	DBUser  string `long:"dbuser" description:"db username for login" default:"root"`
+	DBPass  string `long:"dbpass" description:"db password for login" default:""`
+	DBAddr  string `long:"dbaddr" description:"db address in for ip:port" default:"127.0.0.1:3306"`
 }
 
 var currentOpts = new(customServerOptions)
@@ -53,6 +56,10 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 	//
 	// Example:
 	swaggerLogger := *dbApis.SetupLogFile(currentOpts.Log)
+	if currentOpts.DataDir != "" {
+		dbApis.SetDataRootDir(currentOpts.DataDir)
+	}
+
 	swaggerLogger.SetPrefix("|GENCODE|")
 	api.Logger = swaggerLogger.Printf
 	if currentOpts.DBName != "" {
@@ -160,18 +167,29 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 	api.RegisterPutMedicineRegisterHandler = register.PutMedicineRegisterHandlerFunc(dbApis.RegisterMedicineAPI)
 	api.RegisterPutMedicalTestRegisterHandler = register.PutMedicalTestRegisterHandlerFunc(dbApis.RegisterTestAPI)
 	api.RegisterPutMedicalAdviceRegisterHandler = register.PutMedicalAdviceRegisterHandlerFunc(dbApis.RegisterAdviceAPI)
+	api.RegisterPutMedicalServicesRegisterHandler = register.PutMedicalServicesRegisterHandlerFunc(dbApis.RegisterMedServiceAPI)
 	//Update
 	api.UpdatePostMedicineUpdateHandler = update.PostMedicineUpdateHandlerFunc(dbApis.UpdateMedicineAPI)
 	api.UpdatePostMedicalTestUpdateHandler = update.PostMedicalTestUpdateHandlerFunc(dbApis.UpdateMedTestAPI)
 	api.UpdatePostMedicalAdviceUpdateHandler = update.PostMedicalAdviceUpdateHandlerFunc(dbApis.UpdateAdviceAPI)
+	api.UpdatePostMedicalServicesUpdateHandler = update.PostMedicalServicesUpdateHandlerFunc(dbApis.UpdateMedServiceAPI)
 	//remove
 	api.RemoveDeleteMedicineRemoveHandler = remove.DeleteMedicineRemoveHandlerFunc(dbApis.RemoveMedicineAPI)
 	api.RemoveDeleteMedicalTestRemoveHandler = remove.DeleteMedicalTestRemoveHandlerFunc(dbApis.RemoveMedTestAPI)
 	api.RemoveDeleteMedicalAdviceRemoveHandler = remove.DeleteMedicalAdviceRemoveHandlerFunc(dbApis.RemoveAdviceAPI)
+	api.RemoveDeleteMedicalServicesRemoveHandler = remove.DeleteMedicalServicesRemoveHandlerFunc(dbApis.RemoveMedServiceAPI)
 	//find
 	api.ReadGetMedicineFindHandler = read.GetMedicineFindHandlerFunc(dbApis.FindMedicineAPI)
 	api.ReadGetMedicalTestFindHandler = read.GetMedicalTestFindHandlerFunc(dbApis.FindMedTestAPI)
 	api.ReadGetMedicalAdviceFindHandler = read.GetMedicalAdviceFindHandlerFunc(dbApis.FindAdviceAPI)
+	api.ReadGetMedicalServicesFindHandler = read.GetMedicalServicesFindHandlerFunc(dbApis.FindMedServiceAPI)
+	//image crud
+	api.FilePostFileUploadHandler = file.PostFileUploadHandlerFunc(dbApis.UploadAPI)
+	api.FileGetFileDownloadHandler = file.GetFileDownloadHandlerFunc(dbApis.DownloadAPI)
+	//helpdesk APIs
+	api.HelpdeskPutHelpdeskTicketOpenHandler = helpdesk.PutHelpdeskTicketOpenHandlerFunc(dbApis.HelpdeskTicketOpenAPI)
+	api.HelpdeskPostHelpdeskTicketUpdateHandler = helpdesk.PostHelpdeskTicketUpdateHandlerFunc(dbApis.HelpdeskTicketUpdateAPI)
+	api.HelpdeskGetHelpdeskTicketFindHandler = helpdesk.GetHelpdeskTicketFindHandlerFunc(dbApis.HelpdeskTicketFindAPI)
 	/*****End OF Entity Registration **********/
 
 	api.PreServerShutdown = func() {}

@@ -1,0 +1,66 @@
+# File Sharing API
+upload:
+  post:
+    summary: Uploads an image, uses sessionid cookie to resolve user and set permissions
+    consumes:
+      - multipart/form-data
+    tags:
+      - file
+      - register
+    parameters:
+      - in: formData
+        name: file
+        type: file
+        required: true
+        description: The image to upload
+    responses:
+      200:
+        description: The image was uploaded successfully
+        schema:
+          $ref: './definitions.yml#/passed_reg_info'
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+download:
+  get:
+    tags:
+      - file
+      - read
+    description: Find matches, in case of no param all data will be fetched
+    produces:
+      - image/png
+      - multipart/form-data
+    parameters:
+      - name: id
+        in: query
+        description: System id of resource
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Requested image
+        schema:
+          type: file
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+remove:
+  delete:
+    tags:
+      - file
+      - remove
+    parameters:
+      - name: id
+        in: query
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Image deleted successfully
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+      

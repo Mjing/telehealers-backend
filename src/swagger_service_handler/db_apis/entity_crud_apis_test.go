@@ -44,7 +44,7 @@ func TestEditMedicineAPIs(t *testing.T) {
 	TestSetupDbConnection(t)
 	for _, ent := range tests {
 		medicine := register.NewPutMedicineRegisterParams()
-		medicine.Info = &ent
+		medicine.Info.Data = &ent
 		responder := RegisterMedicineAPI(medicine, nil)
 		switch resp := responder.(type) {
 		case *register.PutMedicineRegisterDefault:
@@ -78,7 +78,7 @@ func testUpdateMedTestAPI(t *testing.T, ent models.Entity) {
 func TestEditMedTestAPI(t *testing.T) {
 	for _, ent := range tests {
 		test := register.NewPutMedicalTestRegisterParams()
-		test.Info = &ent
+		test.Info.Data = &ent
 		responder := RegisterTestAPI(test, nil)
 		switch resp := responder.(type) {
 		case *register.PutMedicalTestRegisterDefault:
@@ -112,7 +112,7 @@ func testUpdateAdviceAPI(t *testing.T, ent models.Entity) {
 func TestEditAdviceAPI(t *testing.T) {
 	for _, ent := range tests {
 		advice := register.NewPutMedicalAdviceRegisterParams()
-		advice.Info = &ent
+		advice.Info.Data = &ent
 		responder := RegisterAdviceAPI(advice, nil)
 		switch resp := responder.(type) {
 		case *register.PutMedicalAdviceRegisterDefault:
@@ -132,7 +132,7 @@ func TestFindAndRemoveEntities(t *testing.T) {
 	TestSetupDbConnection(t)
 	for _, ent := range tests {
 		findMedReq := read.NewGetMedicineFindParams()
-		findMedReq.NameContains = &ent.Name
+		findMedReq.NameContaining = &ent.Name
 		foundMedicineResponder := FindMedicineAPI(findMedReq, nil)
 		var foundMeds [](*models.Entity)
 		switch resp := foundMedicineResponder.(type) {
@@ -158,7 +158,7 @@ func TestFindAndRemoveEntities(t *testing.T) {
 
 		//test
 		findMedTestReq := read.NewGetMedicalTestFindParams()
-		findMedTestReq.NameContains = &ent.Name
+		findMedTestReq.NameContaining = &ent.Name
 		foundMedTestResponder := FindMedTestAPI(findMedTestReq, nil)
 		var foundTests [](*models.Entity)
 		switch resp := foundMedTestResponder.(type) {
@@ -183,7 +183,7 @@ func TestFindAndRemoveEntities(t *testing.T) {
 		}
 		//advice
 		findAdviceReq := read.NewGetMedicalAdviceFindParams()
-		findAdviceReq.NameContains = &ent.Name
+		findAdviceReq.NameContaining = &ent.Name
 		foundAdviceResponder := FindAdviceAPI(findAdviceReq, nil)
 		var foundAdvices [](*models.Entity)
 		switch resp := foundAdviceResponder.(type) {

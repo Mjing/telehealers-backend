@@ -325,6 +325,9 @@ doctor_definitions:
       profile_picture_id:
         type: integer
         description: system id for profile picture
+      sign_picture_id:
+        type: integer
+        description: system id for signature image
       registration_id:
         description: 'Certification id, for practice license'
         type: string

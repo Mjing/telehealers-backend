@@ -248,7 +248,7 @@ func (resp *patientLogin) scanRows(rows *sql.Rows) error {
 	default:
 		resp.dataError = errors.New("internal db error: multiple doctors with same email id")
 	}
-	if err := updateLoginSession(resp.info.Payload.Patient.ID, resp.info.Payload.SessionID, "OFFLINE", patientSessionTbl); err != nil {
+	if err := updateLoginSession(resp.info.Payload.Patient.ID, resp.info.Payload.SessionID, "offline", "patient"); err != nil {
 		logger.Printf("[Error] In doc login session-id updation:%v", err)
 		resp.dataError = errors.New("internal db error: In creating login data")
 	}

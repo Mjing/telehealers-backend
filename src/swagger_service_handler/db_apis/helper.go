@@ -34,3 +34,7 @@ func getTimeOutContext() (context.Context, context.CancelFunc) {
 func duplicateEntryError(err error) bool {
 	return strings.Contains(err.Error(), "uplicate")
 }
+
+func SetDataRootDir(newRootPath string) {
+	fileStoreRoot = newRootPath
+}
