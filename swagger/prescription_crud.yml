@@ -125,7 +125,7 @@ definitions:
         description: Reason/Extra-comments associated with the id
       name:
         type: string
-        description: Associated name, only for read APIs
+        description: Associated name
   prescription:
     type: object
     properties:

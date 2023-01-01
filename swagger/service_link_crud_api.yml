@@ -1,0 +1,27 @@
+link:
+  post:
+    tags:
+      - services
+      - link
+    description: Link services to server
+    parameters:
+      - name: link
+        in: body
+        schema:
+          $ref: '#/definitions/link'
+    responses:
+      200:
+        description: User linked or link already present
+      default:
+        description: Error Response
+        schema:
+          $ref: './definitions.yml#/error'
+
+definitions:
+  link:
+    type: object
+    properties:
+      user_id:
+        type: integer
+      service_id:
+        type: integer

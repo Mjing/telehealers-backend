@@ -9,6 +9,7 @@ produces:
 - application/json
 schemes:
 - http
+- https
 swagger: "2.0"
 securityDefinitions:
   key:
@@ -68,6 +69,8 @@ paths:
     $ref: './doctor_crud_api.yml#/patients'
   /doctor/online:
     $ref: './doctor_crud_api.yml#/online'
+  /doctor/services:
+    $ref: './doctor_crud_api.yml#/find_services'
   # Patient CRUD APIs
   /patient/register:
     $ref: './patient_crud_api.yml#/register'
@@ -140,6 +143,8 @@ paths:
     $ref: './entity_crud_api.yml#/update'
   /medical/services/find:
     $ref: './entity_crud_api.yml#/find'
+  /medical/services/link/doctor:
+    $ref: './service_link_crud_api.yml#/link'
   # Request admin approval
   /helpdesk/ticket/open:
     $ref: './helpdesk_crud_api.yml#/open'

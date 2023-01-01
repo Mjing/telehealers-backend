@@ -23,6 +23,7 @@ import (
 	"telehealers.in/router/restapi/operations/read"
 	"telehealers.in/router/restapi/operations/register"
 	"telehealers.in/router/restapi/operations/remove"
+	"telehealers.in/router/restapi/operations/services"
 	"telehealers.in/router/restapi/operations/update"
 	customHandlers "telehealers.in/router/src/swagger_service_handler"
 	vcCustomHandlers "telehealers.in/router/src/swagger_service_handler/conferrencing"
@@ -33,7 +34,7 @@ import (
 
 type customServerOptions struct {
 	Log     string `short:"l" long:"log" description:"Log file"`
-	DataDir string `short:"dd" long:"datadir" description:"Set root of data dir to this variable"`
+	DataDir string `short:"d" long:"datadir" description:"Set root of data dir to this variable"`
 	DBName  string `long:"dbname" description:"data-base name, leave empty to toggle reading vars from env variables"`
 	DBUser  string `long:"dbuser" description:"db username for login" default:"root"`
 	DBPass  string `long:"dbpass" description:"db password for login" default:""`
@@ -119,6 +120,7 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 	api.DoctorGetDoctorPatientsHandler = doctor.GetDoctorPatientsHandlerFunc(
 		dbApis.DoctorRelatedPatientsAPI)
 	api.DoctorPostDoctorOnlineHandler = doctor.PostDoctorOnlineHandlerFunc(dbApis.DoctorOnlineAPI)
+	api.DoctorGetDoctorServicesHandler = doctor.GetDoctorServicesHandlerFunc(dbApis.GetDoctorServicesAPI)
 	/** Patient CRUD APIs **/
 	api.PatientPutPatientRegisterHandler = patient.PutPatientRegisterHandlerFunc(
 		func(pprp patient.PutPatientRegisterParams, p *models.Principal) middleware.Responder {
@@ -183,6 +185,9 @@ func configureAPI(api *operations.TelehealersBackendAPI) http.Handler {
 	api.ReadGetMedicalTestFindHandler = read.GetMedicalTestFindHandlerFunc(dbApis.FindMedTestAPI)
 	api.ReadGetMedicalAdviceFindHandler = read.GetMedicalAdviceFindHandlerFunc(dbApis.FindAdviceAPI)
 	api.ReadGetMedicalServicesFindHandler = read.GetMedicalServicesFindHandlerFunc(dbApis.FindMedServiceAPI)
+	//Misc entity fuctions
+	api.ServicesPostMedicalServicesLinkDoctorHandler = services.PostMedicalServicesLinkDoctorHandlerFunc(
+		dbApis.LinkMedicalServicesAPI)
 	//image crud
 	api.FilePostFileUploadHandler = file.PostFileUploadHandlerFunc(dbApis.UploadAPI)
 	api.FileGetFileDownloadHandler = file.GetFileDownloadHandlerFunc(dbApis.DownloadAPI)

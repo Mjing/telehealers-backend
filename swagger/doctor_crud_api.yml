@@ -78,6 +78,32 @@ find:
         description: Error response
         schema:
           $ref: './definitions.yml#/error'
+find_services:
+  get:
+    tags:
+      - doctor
+      - read
+    description: API to find services related to doctor, dumps all services at once
+    parameters:
+      - name: doctor_id
+        in: query
+        type: integer
+        description: System id number
+        required: true
+    responses:
+      200:
+        description: List of matched doctors
+        schema:
+          type: object
+          properties:
+            services:
+              type: array
+              items:
+                $ref: './entity_crud_api.yml#/definitions/entity'
+      default:
+        description: Error response
+        schema:
+          $ref: './definitions.yml#/error'
 remove:
   delete:
     tags:

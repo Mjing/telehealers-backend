@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 
+	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 	"telehealers.in/router/models"
 	"telehealers.in/router/restapi/operations/patient"
@@ -94,6 +96,7 @@ func makeUpdatePatQuery(pat *models.PatientInfo) (query string, queryArgs []any,
 		updateQueryListString(&set, "profile_picture", ",")
 		queryArgs = append(queryArgs, pat.ProfilePictureID)
 	}
+	queryArgs = append(queryArgs, pat.ID)
 	query = fmt.Sprintf(updatePatQuery, set, cond)
 	return
 }
@@ -206,6 +209,16 @@ type patientLogin struct {
 	dataError error
 }
 
+func (okResp *patientLogin) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+	cookie := &http.Cookie{Name: "th-ssid", Value: okResp.info.Payload.SessionID, Path: "/",
+		SameSite: http.SameSiteNoneMode, Secure: true}
+	http.SetCookie(rw, cookie)
+	rw.WriteHeader(200)
+	if respErr := producer.Produce(rw, okResp.info.Payload); respErr != nil {
+		logger.Fatalf("[CRITICAL ERROR] Unable to write response:%v", respErr)
+	}
+}
+
 func (*patientLogin) errResponse(httpStatusCode int, err error) middleware.Responder {
 	return patient.NewGetPatientLoginDefault(httpStatusCode).WithPayload(models.Error(err.Error()))
 }
@@ -215,7 +228,7 @@ func (data *patientLogin) okResponse(int64, int64) middleware.Responder {
 		logger.Printf("[Query Error] Query or DB error:%v", data.dataError)
 		return patient.NewGetPatientLoginDefault(400).WithPayload(models.Error(data.dataError.Error()))
 	}
-	return &data.info
+	return data
 }
 
 func (req *patientLogin) makeQuery() (sqlQuery sqlExeParams, err error) {

@@ -14,6 +14,7 @@ import (
 	"telehealers.in/router/restapi/operations/read"
 	"telehealers.in/router/restapi/operations/register"
 	"telehealers.in/router/restapi/operations/remove"
+	"telehealers.in/router/restapi/operations/services"
 	"telehealers.in/router/restapi/operations/update"
 )
 
@@ -538,3 +539,49 @@ func FindMedServiceAPI(param read.GetMedicalServicesFindParams, p *models.Princi
 }
 
 /***************************END MEDICINE Test APIs*******************************/
+//LINK
+
+// Returns true if row is present
+func checkIfRowIsPresent(table string, id int64) (bool, error) {
+	query := fmt.Sprintf("SELECT 1 FROM %v WHERE id = %v", table, id)
+	ctx, cancel := getTimeOutContext()
+	defer cancel()
+	if rows, dbErr := ExecDataFetchQuery(ctx, query); dbErr != nil {
+		logger.Printf("[Error]db err in checking row:%v |query:%v", dbErr, query)
+		return false, dbErr
+	} else {
+		return rows.Next(), nil
+	}
+}
+
+func LinkMedicalServicesAPI(param services.PostMedicalServicesLinkDoctorParams, p *models.Principal) middleware.Responder {
+	if param.Link.UserID == 0 {
+		return services.NewPostMedicalServicesLinkDoctorDefault(400).WithPayload("non-zero doctor-id(user_id) required")
+	}
+	if param.Link.ServiceID == 0 {
+		return services.NewPostMedicalServicesLinkDoctorDefault(400).WithPayload("non zero service-id required")
+	}
+	if present, checkErr := checkIfRowIsPresent(doctorTbl, param.Link.UserID); !present {
+		if checkErr != nil {
+			return services.NewPostMedicalServicesLinkDoctorDefault(500).WithPayload("internal server error")
+		}
+		logger.Printf("[Error]in linking doctor to service:doctor_id not present(service:%v, doctor:%v)",
+			param.Link.ServiceID, param.Link.UserID)
+		return services.NewPostMedicalServicesLinkDoctorDefault(400).WithPayload("invalid doctor-id")
+	}
+	if present, checkErr := checkIfRowIsPresent(medServiceTbl, param.Link.ServiceID); !present {
+		if checkErr != nil {
+			return services.NewPostMedicalServicesLinkDoctorDefault(500).WithPayload("internal server error")
+		}
+		logger.Printf("[Error]in linking doctor to service:doctor_id not present(service:%v, doctor:%v)",
+			param.Link.ServiceID, param.Link.UserID)
+		return services.NewPostMedicalServicesLinkDoctorDefault(400).WithPayload("internal server error")
+	}
+	query := fmt.Sprintf("INSERT IGNORE INTO %v (doctor_id, speciality_id) VALUES (%v,%v)", docToServiceMap,
+		param.Link.UserID, param.Link.ServiceID)
+	if _, _, queryErr := ExecDataUpdateQuery(query); queryErr != nil {
+		logger.Printf("[Error] doctor-service link update query-err:%v", queryErr)
+		return services.NewPostMedicalServicesLinkDoctorDefault(500).WithPayload("internal server error")
+	}
+	return services.NewPostMedicalServicesLinkDoctorOK()
+}

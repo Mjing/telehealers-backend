@@ -495,3 +495,30 @@ func DoctorOnlineAPI(req doctor.PostDoctorOnlineParams, p *models.Principal) mid
 	}
 	return doctor.NewPostDoctorOnlineOK()
 }
+
+/** Handler for /doctor/services **/
+func GetDoctorServicesAPI(param doctor.GetDoctorServicesParams, p *models.Principal) middleware.Responder {
+	if param.DoctorID == 0 {
+		logger.Printf("[Error]non zero id required")
+		return doctor.NewGetDoctorServicesDefault(400).WithPayload("non zero doctor_id required")
+	}
+	ctx, cancel := getTimeOutContext()
+	defer cancel()
+	rows, exeErr := ExecDataFetchQuery(ctx, "SELECT st.id, st.name, st.description FROM "+medServiceTbl+
+		" st,"+docToServiceMap+" m WHERE m.doctor_id = ? AND m.speciality_id = st.id ", param.DoctorID)
+	if exeErr != nil {
+		logger.Printf("[Error]In fetching doctor services:%v", exeErr)
+		return doctor.NewGetDoctorServicesDefault(500).WithPayload("internal server error")
+	}
+	resp := doctor.NewGetDoctorServicesOK()
+	var data [](*models.Entity)
+	for rows.Next() {
+		row := &models.Entity{}
+		if scanErr := rows.Scan(&row.ID, &row.Name, &row.Description); scanErr != nil {
+			logger.Printf("[Error]In fetching row:%v", scanErr)
+			return doctor.NewGetDoctorServicesDefault(500).WithPayload("internal server error")
+		}
+		data = append(data, row)
+	}
+	return resp.WithPayload(&doctor.GetDoctorServicesOKBody{Services: data})
+}

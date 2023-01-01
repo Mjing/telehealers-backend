@@ -61,10 +61,11 @@ const (
 // General Entities
 // Columns: name, description
 var (
-	medicineTbl   = "medicines"
-	testTbl       = "med_tests"
-	adviceTbl     = "advices"
-	medServiceTbl = "doctor_specialities"
+	medicineTbl     = "medicines"
+	testTbl         = "med_tests"
+	adviceTbl       = "advices"
+	medServiceTbl   = "doctor_specialities"
+	docToServiceMap = "doctor_to_specialities_map"
 )
 
 // Map tables

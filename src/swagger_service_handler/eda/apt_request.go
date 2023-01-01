@@ -17,8 +17,6 @@ import (
 	"github.com/vmware/transport-go/service"
 	"github.com/vmware/transport-go/stompserver"
 	"telehealers.in/router/models"
-	"telehealers.in/router/restapi/operations/doctor"
-	"telehealers.in/router/restapi/operations/patient"
 )
 
 const (
@@ -35,6 +33,7 @@ const (
 /** Model **/
 type DocIDStruct struct {
 	ID        int    `mapstructure:"id"`
+	Checking  []int  `mapstructure:"checking"`
 	SessionID string `mapstructure:"session_id"`
 }
 
@@ -111,12 +110,32 @@ func (s *AppointmentService) Init(core service.FabricServiceCore) error {
 	return nil
 }
 
-func newDocInfoAndSessionID() *doctor.GetDoctorLoginOKBody {
-	return &doctor.GetDoctorLoginOKBody{Doctor: &models.DoctorInfo{}}
+type DoctorSeePatientRequest struct {
+	Doctor   *models.DoctorInfo `json:"doctor"`
+	Checking []int              `json:"checking"`
 }
 
-func newPatInfoAndSessionID() *patient.GetPatientLoginOKBody {
-	return &patient.GetPatientLoginOKBody{Patient: &models.PatientInfo{}}
+func (req *DoctorSeePatientRequest) isChekcing(serviceID int) bool {
+	for _, s := range req.Checking {
+		if s == serviceID {
+			return true
+		}
+	}
+	return false
+}
+
+func newDocInfoAndSessionID() *DoctorSeePatientRequest {
+	return &DoctorSeePatientRequest{Doctor: &models.DoctorInfo{}}
+}
+
+type ConsultationReq struct {
+	Patient   *models.PatientInfo `json:"patient"`
+	DoctorID  int                 `json:"doctor_id"`
+	ServiceID int                 `json:"service_id"`
+}
+
+func newPatInfoAndSessionID() *ConsultationReq {
+	return &ConsultationReq{&models.PatientInfo{}, 0, 0}
 }
 
 type AptScheduledResponse struct {
@@ -172,7 +191,21 @@ func (ds *AppointmentService) handleRequestAptCMD(patientRequest *model.Request,
 	ds.lock.RLock()
 	var docCachedRequest *model.Request = nil
 	for _, _req := range ds.connIDToReq {
-		docCachedRequest = &_req
+		if (_patReq.ServiceID != 0) || (_patReq.DoctorID != 0) {
+			_docReq := newDocInfoAndSessionID()
+			mapstructure.Decode(_req.Payload, _docReq)
+			if (_patReq.DoctorID != 0) && (_docReq.Doctor.ID == int64(_patReq.DoctorID)) {
+				docCachedRequest = &_req
+				break
+			}
+			if (_patReq.ServiceID != 0) && (_docReq.isChekcing(_patReq.ServiceID)) {
+				docCachedRequest = &_req
+				break
+			}
+		} else {
+			docCachedRequest = &_req
+			break
+		}
 	}
 	ds.lock.RUnlock()
 
